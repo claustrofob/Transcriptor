@@ -1,0 +1,73 @@
+name: Transcriptor
+options:
+  bundleIdPrefix: com.claustrofob
+  deploymentTarget:
+    iOS: "26.0"
+  xcodeVersion: "26.2"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+    SUPPORTED_PLATFORMS: iphoneos iphonesimulator
+    SUPPORTS_MACCATALYST: false
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+targets:
+
+  Transcriptor:
+    type: application
+    platform: iOS
+    sources:
+      - Transcriptor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claustrofob.Transcriptor
+        INFOPLIST_FILE: Transcriptor/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Transcriptor/Transcriptor.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        PRODUCT_NAME: Transcriptor
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+    dependencies:
+      - target: TranscriptorKit
+        embed: true
+      - target: TranscriptorAction
+        embed: true
+
+  TranscriptorKit:
+    type: framework
+    platform: iOS
+    sources:
+      - TranscriptorKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claustrofob.TranscriptorKit
+        PRODUCT_NAME: TranscriptorKit
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        DEFINES_MODULE: "YES"
+        SKIP_INSTALL: "YES"
+        GENERATE_INFOPLIST_FILE: "YES"
+
+  TranscriptorAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - TranscriptorAction
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claustrofob.Transcriptor.Action
+        INFOPLIST_FILE: TranscriptorAction/Info.plist
+        CODE_SIGN_ENTITLEMENTS: TranscriptorAction/TranscriptorAction.entitlements
+        PRODUCT_NAME: TranscriptorAction
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SKIP_INSTALL: "YES"
+    dependencies:
+      - target: TranscriptorKit
+        embed: false
+    entitlements:
+      path: TranscriptorAction/TranscriptorAction.entitlements
