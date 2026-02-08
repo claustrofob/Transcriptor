@@ -13,6 +13,7 @@ settings:
     SUPPORTED_PLATFORMS: iphoneos iphonesimulator
     SUPPORTS_MACCATALYST: false
     TARGETED_DEVICE_FAMILY: "1,2"
+    DEVELOPMENT_TEAM: 433973SB7Y
 
 targets:
 
