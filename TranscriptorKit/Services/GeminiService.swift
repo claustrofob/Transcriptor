@@ -86,6 +86,34 @@ public actor GeminiService {
         }
     }
 
+    // MARK: - Short translation (for history)
+
+    /// Fetch a concise comma-separated translation for history display.
+    public func translateShort(text: String, targetLanguage: String, model: TranslationSettings.GeminiModel) async throws -> String {
+        let apiKey = try requireAPIKey()
+        let urlString = "\(AppConstants.geminiBaseURL)/\(model.rawValue):generateContent?key=\(apiKey)"
+
+        var request = URLRequest(url: URL(string: urlString)!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
+
+        let body = GeminiRequest(
+            systemPrompt: PromptBuilder.shortTranslationPrompt(targetLanguage: targetLanguage),
+            userText: text
+        )
+        request.httpBody = try? JSONEncoder().encode(body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTPResponse(response, data: data)
+
+        let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+        guard let content = geminiResponse.text else {
+            throw TranslationError.emptyResponse
+        }
+        return content.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     // MARK: - Private helpers
 
     private func requireAPIKey() throws -> String {
@@ -100,12 +128,6 @@ public actor GeminiService {
     }
 
     private static func buildURLRequestStatic(text: String, settings: TranslationSettings, stream: Bool, apiKey: String) -> URLRequest {
-        // Gemini endpoint:
-        // stream:  POST .../models/{model}:streamGenerateContent?alt=sse&key={key}
-        // normal:  POST .../models/{model}:generateContent?key={key}
-        let action = stream ? "streamGenerateContent?alt=sse" : "generateContent"
-        let urlString = "\(AppConstants.geminiBaseURL)/\(settings.model.rawValue):\(action)&key=\(apiKey)"
-        // Fix: for non-streaming, first param is ?, not &
         let correctedURL: String
         if stream {
             correctedURL = "\(AppConstants.geminiBaseURL)/\(settings.model.rawValue):streamGenerateContent?alt=sse&key=\(apiKey)"

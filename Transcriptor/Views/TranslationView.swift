@@ -141,10 +141,23 @@ struct TranslationView: View {
                     }
                 }
             }
+            // Fetch short translation for history display
+            let shortTranslation: String?
+            if settings.detailLevel == .concise {
+                shortTranslation = translatedText
+            } else {
+                shortTranslation = try? await GeminiService.shared.translateShort(
+                    text: text,
+                    targetLanguage: settings.targetLanguage,
+                    model: settings.model
+                )
+            }
+
             // Save to history
             let result = TranslationResult(
                 sourceText: text,
                 translatedText: translatedText,
+                shortTranslation: shortTranslation,
                 targetLanguage: settings.targetLanguage,
                 model: settings.model.rawValue
             )
