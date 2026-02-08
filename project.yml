@@ -72,3 +72,8 @@ targets:
         embed: false
     entitlements:
       path: TranscriptorAction/TranscriptorAction.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.claustrofob.Transcriptor
+        keychain-access-groups:
+          - $(AppIdentifierPrefix)com.claustrofob.Transcriptor
