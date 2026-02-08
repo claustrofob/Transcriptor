@@ -78,3 +78,15 @@ targets:
           - group.com.claustrofob.Transcriptor
         keychain-access-groups:
           - $(AppIdentifierPrefix)com.claustrofob.Transcriptor
+
+schemes:
+  Transcriptor:
+    build:
+      targets:
+        Transcriptor: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    archive:
+      config: Release
