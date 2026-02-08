@@ -30,4 +30,10 @@ iOS-приложение для перевода текста через Google 
 ## Репозиторий
 
 - GitHub: `claustrofob/Transcriptor` (private)
-- Push через MCP GitHub API (SSH не настроен)
+- SSH не настроен
+
+## Workflow
+
+- Коммиты: `git add` + `git commit` локально
+- Push: `git push` через MCP GitHub (не через SSH/HTTPS)
+- Единственный контрибьютор — конфликтов нет, можно пушить напрямую в main
