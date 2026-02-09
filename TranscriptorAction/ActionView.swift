@@ -9,7 +9,6 @@ struct ActionView: View {
     @State private var translatedText = ""
     @State private var isTranslating = true
     @State private var errorMessage: String?
-    @State private var copied = false
     @State private var sourceLanguage: String?
     @State private var examples: [TranslationExample] = []
 
@@ -25,54 +24,28 @@ struct ActionView: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } label: {
-                        HStack {
-                            Label("Original", systemImage: "text.quote")
-                                .font(.caption)
-                            Spacer()
-                            if let sourceLanguage {
-                                Text(sourceLanguage)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 3)
-                                    .background(.fill.tertiary)
-                                    .clipShape(Capsule())
-                            }
-                        }
-                    }
-
-                    // Translation
-                    GroupBox {
-                        if let errorMessage {
-                            Label(errorMessage, systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(.red)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } else if isTranslating && translatedText.isEmpty {
-                            HStack {
-                                ProgressView()
-                                Text("Translating...")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 8)
-                        } else {
-                            MarkdownText(translatedText)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    } label: {
-                        Label("Translation", systemImage: "text.bubble")
+                        Label("Original", systemImage: "text.quote")
                             .font(.caption)
                     }
 
-                    // Examples
-                    if !examples.isEmpty {
-                        GroupBox {
-                            ExamplesView(examples)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } label: {
-                            Label("Examples", systemImage: "text.book.closed")
-                                .font(.caption)
+                    // Translation result
+                    if let errorMessage {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.red)
+                    } else if isTranslating && translatedText.isEmpty {
+                        HStack {
+                            ProgressView()
+                            Text("Translating...")
+                                .foregroundStyle(.secondary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
+                    } else if !translatedText.isEmpty {
+                        TranslationContentView(
+                            translatedText: translatedText,
+                            sourceLanguage: sourceLanguage,
+                            examples: examples
+                        )
                     }
                 }
                 .padding()
@@ -82,23 +55,6 @@ struct ActionView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { onDone() }
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        UIPasteboard.general.string = translatedText
-                        copied = true
-                        Task {
-                            try? await Task.sleep(for: .seconds(2))
-                            copied = false
-                        }
-                    } label: {
-                        Label(
-                            copied ? "Copied!" : "Copy",
-                            systemImage: copied ? "checkmark" : "doc.on.doc"
-                        )
-                    }
-                    .disabled(translatedText.isEmpty)
                 }
             }
             .task { await translate() }

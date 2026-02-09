@@ -63,6 +63,53 @@ iOS-приложение для перевода текста через Google 
 - Detail Level
 - About
 
+## Двухфазный перевод
+
+Перевод выполняется в два этапа:
+
+### Фаза 1: Streaming (Markdown)
+- Модель: `streamGenerateContent?alt=sse`
+- Промпт генерирует основной текст перевода в Markdown (нормальная форма, грамматика, значения)
+- Примеры НЕ включаются в streaming — они приходят отдельно из JSON
+- Результат отображается через `MarkdownText` (парсит блочный и inline Markdown)
+
+### Фаза 2: JSON meta extraction
+- Модель: `generateContent` с `response_mime_type: "application/json"` + `response_schema`
+- Извлекает структурированные метаданные для UI и истории
+
+**JSON Schema ответа:**
+```json
+{
+  "sourceLanguage": "Польский (pl)",
+  "shortTranslation": "ещё, всё ещё, пока",
+  "examples": [
+    {
+      "original": "Jeszcze nie skończyłem.",
+      "translation": "Я ещё не закончил."
+    }
+  ]
+}
+```
+
+**Поля:**
+- `sourceLanguage` (string, required) — язык оригинала на target language + ISO 639-1 код в скобках
+- `shortTranslation` (string, required) — краткий перевод через запятую, без форматирования
+- `examples` (array, required) — примеры использования:
+  - Concise: пустой массив `[]`
+  - Standard: 3-5 примеров
+  - Detailed: 5-8 примеров
+  - Каждый элемент: `{ "original": string, "translation": string }`
+
+## Shared UI
+
+`TranslationContentView` (TranscriptorKit) — переиспользуемая view для отображения результата перевода:
+- Source language badge
+- Markdown-текст перевода
+- Список примеров (ExamplesView)
+- Кнопка копирования с feedback "Copied!"
+
+Используется в: TranslationView, ActionView, HistoryDetailView.
+
 ## Верификация
 
 1. Собрать и запустить на симуляторе — основное приложение должно открыться
