@@ -58,7 +58,6 @@ struct SettingsView: View {
                         }
                     }
 
-                    Toggle("Include Examples", isOn: $settings.includeExamples)
                 }
 
                 Section("About") {

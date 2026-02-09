@@ -8,28 +8,53 @@ public enum PromptBuilder {
 
         parts.append("You are a professional translator and linguist.")
         parts.append("Translate the following text into \(settings.targetLanguage).")
-        parts.append("IMPORTANT: Respond with plain text only. Do NOT use Markdown, bold, headers, bullet points, or any formatting. Do NOT repeat the source text or label sections.")
+        parts.append("First, identify the source language and state it on the first line, e.g. \"Language: Polish\".")
 
         switch settings.detailLevel {
         case .concise:
-            parts.append("Provide only the exact translation variants separated by commas. Nothing else \u{2014} no explanations, no notes, no examples.")
+            parts.append("""
+            Then provide:
+            - The word/phrase in its dictionary (normal) form.
+            - Its grammatical type (noun, verb, adjective, etc.) and gender/number if applicable (m, f, n, pl).
+            - Translation variants separated by commas.
+            - Brief note on the context where this word/phrase is typically used.
+            Keep it compact. No examples, no numbered lists.
+            """)
 
         case .standard:
-            parts.append("First line: the word or phrase in its dictionary/normal form, with gender or number indication in parentheses if applicable in the target language (e.g. \"(m)\", \"(f)\", \"(n)\", \"(pl)\").")
-            parts.append("Second line: a brief description of the meaning in the target language.")
+            parts.append("""
+            Then provide:
+            - The word/phrase in its dictionary (normal) form.
+            - Its grammatical type (noun, verb, adjective, etc.) and gender/number if applicable (m, f, n, pl).
+            - Translation variants separated by commas.
+            - Brief note on the context where this word/phrase is typically used.
+            Then add a section "Examples:" with an unnumbered list of usage examples. Each example should be a sentence in the original language followed by a dash and its translation. Like this:
+            Examples:
+            * Lustrował teren. — He was surveying the area.
+            * Lustrował dokumenty. — He was thoroughly reviewing the documents.
+            Provide 3-5 examples showing different contexts.
+            """)
 
         case .detailed:
-            parts.append("First line: the word or phrase in its dictionary/normal form, with gender or number indication in parentheses if applicable in the target language (e.g. \"(m)\", \"(f)\", \"(n)\", \"(pl)\").")
-            parts.append("Following lines: a thorough description of the meaning, nuances, connotations, and alternative translations in the target language. Include notes on register (formal/informal), regional usage, and any idiomatic aspects.")
-        }
-
-        if settings.includeExamples {
-            parts.append("After the translation, on new lines add 2-3 short usage examples showing the word or phrase in different contexts. Each example on its own line.")
+            parts.append("""
+            Then provide:
+            - The word/phrase in its dictionary (normal) form.
+            - Its grammatical type (noun, verb, adjective, etc.) and gender/number if applicable (m, f, n, pl).
+            - Translation variants separated by commas.
+            - Brief note on the context where this word/phrase is typically used.
+            Then provide a detailed numbered list of each meaning/sense of the word. Each numbered item should contain the variant of the word/phrase with its translation. Under each numbered item, add an unnumbered list with 2-3 usage examples (sentence in original language — translation). Like this:
+            1. lustrować (осматривать, обследовать) — to inspect, to survey
+            * Lustrował teren. — He was surveying the area.
+            * Lustrował okolicę. — He was inspecting the surroundings.
+            2. lustrować (проверять) — to review, to examine
+            * Lustrował dokumenty. — He was thoroughly reviewing the documents.
+            Cover all significant meanings of the word.
+            """)
         }
 
         parts.append("If the source text is already in \(settings.targetLanguage), translate it into English instead.")
 
-        return parts.joined(separator: " ")
+        return parts.joined(separator: "\n")
     }
 
     /// Short prompt that returns ONLY the concise comma-separated translation.
@@ -38,7 +63,7 @@ public enum PromptBuilder {
         [
             "You are a translator.",
             "Translate the following text into \(targetLanguage).",
-            "Provide ONLY the exact translation variants separated by commas. Nothing else \u{2014} no explanations, no notes, no examples, no formatting.",
+            "Provide ONLY the exact translation variants separated by commas. Nothing else — no explanations, no notes, no examples, no formatting.",
             "If the source text is already in \(targetLanguage), translate it into English instead."
         ].joined(separator: " ")
     }

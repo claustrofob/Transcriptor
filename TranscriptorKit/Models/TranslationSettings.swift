@@ -4,8 +4,24 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
 
     public var targetLanguage: String
     public var detailLevel: DetailLevel
-    public var includeExamples: Bool
     public var model: GeminiModel
+
+    private enum CodingKeys: String, CodingKey {
+        case targetLanguage, detailLevel, model
+    }
+
+    public init(targetLanguage: String, detailLevel: DetailLevel, model: GeminiModel) {
+        self.targetLanguage = targetLanguage
+        self.detailLevel = detailLevel
+        self.model = model
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        targetLanguage = try container.decode(String.self, forKey: .targetLanguage)
+        detailLevel = try container.decode(DetailLevel.self, forKey: .detailLevel)
+        model = try container.decode(GeminiModel.self, forKey: .model)
+    }
 
     public enum DetailLevel: String, Codable, CaseIterable, Sendable {
         case concise
@@ -46,7 +62,6 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     public static let `default` = TranslationSettings(
         targetLanguage: "Russian",
         detailLevel: .standard,
-        includeExamples: true,
         model: .gemini25Flash
     )
 
