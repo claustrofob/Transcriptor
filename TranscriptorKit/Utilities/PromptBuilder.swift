@@ -17,8 +17,7 @@ public enum PromptBuilder {
         Never use English or any third language for labels or terms.
         """)
         parts.append("""
-        Use Markdown formatting in your response: **bold** for the normal form and key terms, \
-        bullet lists (* item) for examples.
+        Use Markdown formatting in your response: **bold** for the normal form and key terms.
         """)
 
         switch settings.detailLevel {
@@ -41,13 +40,7 @@ public enum PromptBuilder {
             "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
             - Translation variants separated by commas.
             - Brief note on the context where this word/phrase is typically used.
-            Then add examples. The section header must be in \(lang) (e.g. "Примеры:" for Russian, \
-            "Ejemplos:" for Spanish, "Examples:" for English). \
-            Use an unnumbered bullet list. Each example: a sentence in the original language, \
-            followed by an em-dash (—) and its translation into \(lang). Like this:
-            * Lustrował teren. — Он осматривал территорию.
-            * Lustrował dokumenty. — Он тщательно проверял документы.
-            Provide 3-5 examples showing different contexts.
+            Do NOT include any examples — they will be provided separately.
             """)
 
         case .detailed:
@@ -60,14 +53,7 @@ public enum PromptBuilder {
             - Brief note on the context where this word/phrase is typically used.
             Then provide a detailed numbered list of each meaning/sense of the word. \
             Each numbered item: the word variant with its translation into \(lang). \
-            Under each numbered item, add an unnumbered bullet list with 2-3 usage examples \
-            (sentence in original language — translation into \(lang)). Like this:
-            1. lustrować (осматривать, обследовать)
-            * Lustrował teren. — Он осматривал территорию.
-            * Lustrował okolicę. — Он осматривал окрестности.
-            2. lustrować (проверять, изучать)
-            * Lustrował dokumenty. — Он тщательно проверял документы.
-            Cover all significant meanings of the word.
+            Do NOT include usage examples — they will be provided separately.
             """)
         }
 
@@ -76,14 +62,25 @@ public enum PromptBuilder {
         return parts.joined(separator: "\n")
     }
 
-    /// Prompt for structured JSON meta extraction (source language + short translation).
-    public static func metaExtractionPrompt(targetLanguage: String) -> String {
-        [
+    /// Prompt for structured JSON meta extraction (source language + short translation + examples).
+    public static func metaExtractionPrompt(targetLanguage: String, detailLevel: TranslationSettings.DetailLevel) -> String {
+        var parts = [
             "You are a professional translator.",
             "Identify the source language of the given text and provide a concise translation into \(targetLanguage).",
             "For sourceLanguage: state the language name in \(targetLanguage) followed by its ISO 639-1 code in parentheses (e.g. \"Польский (pl)\" if target is Russian).",
             "For shortTranslation: provide only the main translation variants separated by commas, without any explanations, formatting, or extra text.",
             "If the source text is already in \(targetLanguage), translate into English instead."
-        ].joined(separator: " ")
+        ]
+
+        switch detailLevel {
+        case .concise:
+            parts.append("For examples: return an empty array [].")
+        case .standard:
+            parts.append("For examples: provide 3-5 usage examples in different contexts. Each example has 'original' (sentence in the source language) and 'translation' (translation into \(targetLanguage)).")
+        case .detailed:
+            parts.append("For examples: provide 5-8 usage examples covering all significant meanings of the word/phrase. Each example has 'original' (sentence in the source language) and 'translation' (translation into \(targetLanguage)).")
+        }
+
+        return parts.joined(separator: " ")
     }
 }

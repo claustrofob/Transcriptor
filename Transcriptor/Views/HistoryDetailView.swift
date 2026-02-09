@@ -22,6 +22,15 @@ struct HistoryDetailView: View {
                     Label("Translation", systemImage: "text.bubble")
                 }
 
+                if !result.examples.isEmpty {
+                    GroupBox {
+                        ExamplesView(result.examples)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } label: {
+                        Label("Examples", systemImage: "text.book.closed")
+                    }
+                }
+
                 HStack {
                     if let sourceLanguage = result.sourceLanguage {
                         Label(sourceLanguage, systemImage: "textformat")

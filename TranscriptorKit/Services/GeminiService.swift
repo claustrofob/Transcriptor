@@ -88,11 +88,12 @@ public actor GeminiService {
 
     // MARK: - Meta extraction (JSON mode)
 
-    /// Extract structured metadata (source language + short translation) using Gemini JSON mode.
+    /// Extract structured metadata (source language + short translation + examples) using Gemini JSON mode.
     public func extractTranslationMeta(
         text: String,
         targetLanguage: String,
-        model: TranslationSettings.GeminiModel
+        model: TranslationSettings.GeminiModel,
+        detailLevel: TranslationSettings.DetailLevel
     ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
         let urlString = "\(AppConstants.geminiBaseURL)/\(model.rawValue):generateContent?key=\(apiKey)"
@@ -101,6 +102,15 @@ public actor GeminiService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
+
+        let exampleSchema = JSONSchema(
+            type: "OBJECT",
+            properties: [
+                "original": JSONSchema(type: "STRING", description: "Example sentence in the source language"),
+                "translation": JSONSchema(type: "STRING", description: "Translation of the example into \(targetLanguage)")
+            ],
+            required: ["original", "translation"]
+        )
 
         let schema = JSONSchema(
             type: "OBJECT",
@@ -112,9 +122,14 @@ public actor GeminiService {
                 "shortTranslation": JSONSchema(
                     type: "STRING",
                     description: "Concise comma-separated translation variants in \(targetLanguage)"
+                ),
+                "examples": JSONSchema(
+                    type: "ARRAY",
+                    items: exampleSchema,
+                    description: "Usage examples with original and translated sentences"
                 )
             ],
-            required: ["sourceLanguage", "shortTranslation"]
+            required: ["sourceLanguage", "shortTranslation", "examples"]
         )
 
         let config = GenerationConfig(
@@ -123,7 +138,7 @@ public actor GeminiService {
         )
 
         let body = GeminiRequest(
-            systemPrompt: PromptBuilder.metaExtractionPrompt(targetLanguage: targetLanguage),
+            systemPrompt: PromptBuilder.metaExtractionPrompt(targetLanguage: targetLanguage, detailLevel: detailLevel),
             userText: text,
             generationConfig: config
         )

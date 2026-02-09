@@ -9,6 +9,9 @@ struct TranslationView: View {
     @State private var error: String?
     @State private var showClipboardAlert = false
     @State private var clipboardText = ""
+    @State private var sourceLanguage: String?
+    @State private var examples: [TranslationExample] = []
+    @State private var copied = false
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
@@ -59,24 +62,53 @@ struct TranslationView: View {
                         Divider()
 
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Translation")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            HStack {
+                                Text("Translation")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Spacer()
+
+                                if let sourceLanguage {
+                                    Label(sourceLanguage, systemImage: "textformat")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(.fill.tertiary)
+                                        .clipShape(Capsule())
+                                }
+                            }
 
                             MarkdownText(translatedText)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                            if !examples.isEmpty {
+                                Divider()
+                                ExamplesView(examples)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
                         .id("translation")
 
                         // Copy button
                         Button {
                             UIPasteboard.general.string = translatedText
+                            copied = true
+                            Task {
+                                try? await Task.sleep(for: .seconds(2))
+                                copied = false
+                            }
                         } label: {
-                            Label("Copy Translation", systemImage: "doc.on.doc")
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
+                            Label(
+                                copied ? "Copied!" : "Copy Translation",
+                                systemImage: copied ? "checkmark" : "doc.on.doc"
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
                         }
                         .buttonStyle(.bordered)
+                        .tint(copied ? .green : nil)
                     }
                 }
                 .padding()
@@ -90,6 +122,9 @@ struct TranslationView: View {
                     Button {
                         sourceText = ""
                         translatedText = ""
+                        sourceLanguage = nil
+                        examples = []
+                        copied = false
                         error = nil
                     } label: {
                         Image(systemName: "trash")
@@ -124,6 +159,9 @@ struct TranslationView: View {
 
         isTranslating = true
         translatedText = ""
+        sourceLanguage = nil
+        examples = []
+        copied = false
         error = nil
 
         let settings = SettingsManager.shared.settings
@@ -140,17 +178,22 @@ struct TranslationView: View {
                     }
                 }
             }
-            // Extract structured metadata (source language + short translation) via JSON mode
+            // Extract structured metadata (source language + short translation + examples) via JSON mode
             var shortTranslation: String?
-            var sourceLanguage: String?
+            var metaSourceLanguage: String?
+            var metaExamples: [TranslationExample] = []
 
             if let meta = try? await GeminiService.shared.extractTranslationMeta(
                 text: text,
                 targetLanguage: settings.targetLanguage,
-                model: settings.model
+                model: settings.model,
+                detailLevel: settings.detailLevel
             ) {
                 shortTranslation = meta.shortTranslation
-                sourceLanguage = meta.sourceLanguage
+                metaSourceLanguage = meta.sourceLanguage
+                metaExamples = meta.examples
+                self.sourceLanguage = meta.sourceLanguage
+                self.examples = meta.examples
             }
 
             // Save to history
@@ -158,9 +201,10 @@ struct TranslationView: View {
                 sourceText: text,
                 translatedText: translatedText,
                 shortTranslation: shortTranslation,
-                sourceLanguage: sourceLanguage,
+                sourceLanguage: metaSourceLanguage,
                 targetLanguage: settings.targetLanguage,
-                model: settings.model.rawValue
+                model: settings.model.rawValue,
+                examples: metaExamples
             )
             modelContext.insert(result)
             try? modelContext.save()

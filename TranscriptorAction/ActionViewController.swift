@@ -1,5 +1,6 @@
 import UIKit
 import SwiftUI
+import SwiftData
 import UniformTypeIdentifiers
 import TranscriptorKit
 
@@ -17,12 +18,21 @@ class ActionViewController: UIViewController {
                 return
             }
 
+            let container: ModelContainer
+            do {
+                container = try HistoryStore.makeContainer()
+            } catch {
+                extensionContext?.completeRequest(returningItems: nil)
+                return
+            }
+
             let actionView = ActionView(
                 sourceText: text,
                 onDone: { [weak self] in
                     self?.extensionContext?.completeRequest(returningItems: nil)
                 }
             )
+            .modelContainer(container)
 
             let hostingController = UIHostingController(rootView: actionView)
             addChild(hostingController)

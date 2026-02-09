@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import TranscriptorKit
 
 struct ActionView: View {
@@ -9,6 +10,10 @@ struct ActionView: View {
     @State private var isTranslating = true
     @State private var errorMessage: String?
     @State private var copied = false
+    @State private var sourceLanguage: String?
+    @State private var examples: [TranslationExample] = []
+
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         NavigationStack {
@@ -20,8 +25,20 @@ struct ActionView: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } label: {
-                        Label("Original", systemImage: "text.quote")
-                            .font(.caption)
+                        HStack {
+                            Label("Original", systemImage: "text.quote")
+                                .font(.caption)
+                            Spacer()
+                            if let sourceLanguage {
+                                Text(sourceLanguage)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(.fill.tertiary)
+                                    .clipShape(Capsule())
+                            }
+                        }
                     }
 
                     // Translation
@@ -45,6 +62,17 @@ struct ActionView: View {
                     } label: {
                         Label("Translation", systemImage: "text.bubble")
                             .font(.caption)
+                    }
+
+                    // Examples
+                    if !examples.isEmpty {
+                        GroupBox {
+                            ExamplesView(examples)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } label: {
+                            Label("Examples", systemImage: "text.book.closed")
+                                .font(.caption)
+                        }
                     }
                 }
                 .padding()
@@ -97,6 +125,37 @@ struct ActionView: View {
             for try await token in stream {
                 translatedText += token
             }
+
+            // Extract structured metadata via JSON mode
+            var shortTranslation: String?
+            var metaSourceLanguage: String?
+            var metaExamples: [TranslationExample] = []
+
+            if let meta = try? await GeminiService.shared.extractTranslationMeta(
+                text: sourceText,
+                targetLanguage: settings.targetLanguage,
+                model: settings.model,
+                detailLevel: settings.detailLevel
+            ) {
+                shortTranslation = meta.shortTranslation
+                metaSourceLanguage = meta.sourceLanguage
+                metaExamples = meta.examples
+                self.sourceLanguage = meta.sourceLanguage
+                self.examples = meta.examples
+            }
+
+            // Save to history
+            let result = TranslationResult(
+                sourceText: sourceText,
+                translatedText: translatedText,
+                shortTranslation: shortTranslation,
+                sourceLanguage: metaSourceLanguage,
+                targetLanguage: settings.targetLanguage,
+                model: settings.model.rawValue,
+                examples: metaExamples
+            )
+            modelContext.insert(result)
+            try? modelContext.save()
         } catch {
             errorMessage = error.localizedDescription
         }

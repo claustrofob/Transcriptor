@@ -65,19 +65,35 @@ public struct GenerationConfig: Encodable, Sendable {
 public struct JSONSchema: Encodable, Sendable {
     public let type: String
     public let properties: [String: JSONSchema]?
+    public let items: JSONSchemaBox?
     public let required: [String]?
     public let description: String?
 
     public init(
         type: String,
         properties: [String: JSONSchema]? = nil,
+        items: JSONSchema? = nil,
         required: [String]? = nil,
         description: String? = nil
     ) {
         self.type = type
         self.properties = properties
+        self.items = items.map { JSONSchemaBox($0) }
         self.required = required
         self.description = description
+    }
+}
+
+/// Box wrapper to allow recursive JSONSchema (for array items).
+public final class JSONSchemaBox: Encodable, @unchecked Sendable {
+    public let value: JSONSchema
+
+    public init(_ value: JSONSchema) {
+        self.value = value
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try value.encode(to: encoder)
     }
 }
 
@@ -86,6 +102,17 @@ public struct JSONSchema: Encodable, Sendable {
 public struct TranslationMeta: Decodable, Sendable {
     public let sourceLanguage: String
     public let shortTranslation: String
+    public let examples: [TranslationExample]
+}
+
+public struct TranslationExample: Codable, Sendable {
+    public let original: String
+    public let translation: String
+
+    public init(original: String, translation: String) {
+        self.original = original
+        self.translation = translation
+    }
 }
 
 // MARK: - Response (non-streaming)

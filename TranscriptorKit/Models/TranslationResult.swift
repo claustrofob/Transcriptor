@@ -10,6 +10,18 @@ public final class TranslationResult {
     public var targetLanguage: String
     public var model: String
     public var createdAt: Date
+    public var examplesData: Data?
+
+    /// Computed property to encode/decode examples as JSON.
+    public var examples: [TranslationExample] {
+        get {
+            guard let data = examplesData else { return [] }
+            return (try? JSONDecoder().decode([TranslationExample].self, from: data)) ?? []
+        }
+        set {
+            examplesData = try? JSONEncoder().encode(newValue)
+        }
+    }
 
     public init(
         sourceText: String,
@@ -17,7 +29,8 @@ public final class TranslationResult {
         shortTranslation: String? = nil,
         sourceLanguage: String? = nil,
         targetLanguage: String,
-        model: String
+        model: String,
+        examples: [TranslationExample] = []
     ) {
         self.sourceText = sourceText
         self.translatedText = translatedText
@@ -26,5 +39,6 @@ public final class TranslationResult {
         self.targetLanguage = targetLanguage
         self.model = model
         self.createdAt = Date()
+        self.examplesData = examples.isEmpty ? nil : (try? JSONEncoder().encode(examples))
     }
 }
