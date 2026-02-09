@@ -5,6 +5,7 @@ import Foundation
 public struct GeminiRequest: Encodable, Sendable {
     public let systemInstruction: SystemInstruction?
     public let contents: [Content]
+    public let generationConfig: GenerationConfig?
 
     public struct SystemInstruction: Encodable, Sendable {
         public let parts: [Part]
@@ -19,6 +20,7 @@ public struct GeminiRequest: Encodable, Sendable {
         public let text: String
     }
 
+    /// Standard request (streaming/non-streaming without JSON mode)
     public init(systemPrompt: String, userText: String) {
         self.systemInstruction = SystemInstruction(
             parts: [Part(text: systemPrompt)]
@@ -26,7 +28,64 @@ public struct GeminiRequest: Encodable, Sendable {
         self.contents = [
             Content(role: "user", parts: [Part(text: userText)])
         ]
+        self.generationConfig = nil
     }
+
+    /// Request with JSON mode (structured output)
+    public init(systemPrompt: String, userText: String, generationConfig: GenerationConfig) {
+        self.systemInstruction = SystemInstruction(
+            parts: [Part(text: systemPrompt)]
+        )
+        self.contents = [
+            Content(role: "user", parts: [Part(text: userText)])
+        ]
+        self.generationConfig = generationConfig
+    }
+}
+
+// MARK: - Generation Config (JSON mode)
+
+public struct GenerationConfig: Encodable, Sendable {
+    public let responseMimeType: String
+    public let responseSchema: JSONSchema
+
+    public init(responseMimeType: String, responseSchema: JSONSchema) {
+        self.responseMimeType = responseMimeType
+        self.responseSchema = responseSchema
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case responseMimeType = "response_mime_type"
+        case responseSchema = "response_schema"
+    }
+}
+
+// MARK: - JSON Schema
+
+public struct JSONSchema: Encodable, Sendable {
+    public let type: String
+    public let properties: [String: JSONSchema]?
+    public let required: [String]?
+    public let description: String?
+
+    public init(
+        type: String,
+        properties: [String: JSONSchema]? = nil,
+        required: [String]? = nil,
+        description: String? = nil
+    ) {
+        self.type = type
+        self.properties = properties
+        self.required = required
+        self.description = description
+    }
+}
+
+// MARK: - Translation Meta (JSON extraction result)
+
+public struct TranslationMeta: Decodable, Sendable {
+    public let sourceLanguage: String
+    public let shortTranslation: String
 }
 
 // MARK: - Response (non-streaming)

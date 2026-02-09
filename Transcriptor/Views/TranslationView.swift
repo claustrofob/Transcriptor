@@ -140,16 +140,17 @@ struct TranslationView: View {
                     }
                 }
             }
-            // Fetch short translation for history display
-            let shortTranslation: String?
-            if settings.detailLevel == .concise {
-                shortTranslation = translatedText
-            } else {
-                shortTranslation = try? await GeminiService.shared.translateShort(
-                    text: text,
-                    targetLanguage: settings.targetLanguage,
-                    model: settings.model
-                )
+            // Extract structured metadata (source language + short translation) via JSON mode
+            var shortTranslation: String?
+            var sourceLanguage: String?
+
+            if let meta = try? await GeminiService.shared.extractTranslationMeta(
+                text: text,
+                targetLanguage: settings.targetLanguage,
+                model: settings.model
+            ) {
+                shortTranslation = meta.shortTranslation
+                sourceLanguage = meta.sourceLanguage
             }
 
             // Save to history
@@ -157,6 +158,7 @@ struct TranslationView: View {
                 sourceText: text,
                 translatedText: translatedText,
                 shortTranslation: shortTranslation,
+                sourceLanguage: sourceLanguage,
                 targetLanguage: settings.targetLanguage,
                 model: settings.model.rawValue
             )

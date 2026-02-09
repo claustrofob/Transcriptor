@@ -86,10 +86,14 @@ public actor GeminiService {
         }
     }
 
-    // MARK: - Short translation (for history)
+    // MARK: - Meta extraction (JSON mode)
 
-    /// Fetch a concise comma-separated translation for history display.
-    public func translateShort(text: String, targetLanguage: String, model: TranslationSettings.GeminiModel) async throws -> String {
+    /// Extract structured metadata (source language + short translation) using Gemini JSON mode.
+    public func extractTranslationMeta(
+        text: String,
+        targetLanguage: String,
+        model: TranslationSettings.GeminiModel
+    ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
         let urlString = "\(AppConstants.geminiBaseURL)/\(model.rawValue):generateContent?key=\(apiKey)"
 
@@ -98,20 +102,43 @@ public actor GeminiService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
 
-        let body = GeminiRequest(
-            systemPrompt: PromptBuilder.shortTranslationPrompt(targetLanguage: targetLanguage),
-            userText: text
+        let schema = JSONSchema(
+            type: "OBJECT",
+            properties: [
+                "sourceLanguage": JSONSchema(
+                    type: "STRING",
+                    description: "Source language name in \(targetLanguage) with ISO 639-1 code, e.g. Польский (pl)"
+                ),
+                "shortTranslation": JSONSchema(
+                    type: "STRING",
+                    description: "Concise comma-separated translation variants in \(targetLanguage)"
+                )
+            ],
+            required: ["sourceLanguage", "shortTranslation"]
         )
-        request.httpBody = try? JSONEncoder().encode(body)
+
+        let config = GenerationConfig(
+            responseMimeType: "application/json",
+            responseSchema: schema
+        )
+
+        let body = GeminiRequest(
+            systemPrompt: PromptBuilder.metaExtractionPrompt(targetLanguage: targetLanguage),
+            userText: text,
+            generationConfig: config
+        )
+        request.httpBody = try JSONEncoder().encode(body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response, data: data)
 
         let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
-        guard let content = geminiResponse.text else {
+        guard let jsonString = geminiResponse.text,
+              let jsonData = jsonString.data(using: .utf8) else {
             throw TranslationError.emptyResponse
         }
-        return content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return try JSONDecoder().decode(TranslationMeta.self, from: jsonData)
     }
 
     // MARK: - Private helpers

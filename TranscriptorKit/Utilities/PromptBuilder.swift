@@ -2,7 +2,7 @@ import Foundation
 
 public enum PromptBuilder {
 
-    /// Full translation prompt used for the main translation view.
+    /// Full translation prompt used for the main translation view (streaming, Markdown output).
     public static func systemPrompt(for settings: TranslationSettings) -> String {
         let lang = settings.targetLanguage
 
@@ -20,16 +20,11 @@ public enum PromptBuilder {
         Use Markdown formatting in your response: **bold** for the normal form and key terms, \
         bullet lists (* item) for examples.
         """)
-        parts.append("""
-        First line: state the source language name in \(lang), followed by its ISO code in parentheses. \
-        Do NOT add a label before it. For example, if the source is Polish and target is Russian: \
-        "Польский (pl)". If the source is English and target is Russian: "Английский (en)".
-        """)
 
         switch settings.detailLevel {
         case .concise:
             parts.append("""
-            Then provide:
+            Provide:
             - The word/phrase in its dictionary (normal) form in **bold**.
             - Its grammatical type and gender/number in \(lang) (e.g. if target is Russian: \
             "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
@@ -40,7 +35,7 @@ public enum PromptBuilder {
 
         case .standard:
             parts.append("""
-            Then provide:
+            Provide:
             - The word/phrase in its dictionary (normal) form in **bold**.
             - Its grammatical type and gender/number in \(lang) (e.g. if target is Russian: \
             "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
@@ -57,7 +52,7 @@ public enum PromptBuilder {
 
         case .detailed:
             parts.append("""
-            Then provide:
+            Provide:
             - The word/phrase in its dictionary (normal) form in **bold**.
             - Its grammatical type and gender/number in \(lang) (e.g. if target is Russian: \
             "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
@@ -81,14 +76,14 @@ public enum PromptBuilder {
         return parts.joined(separator: "\n")
     }
 
-    /// Short prompt that returns ONLY the concise comma-separated translation.
-    /// Used to populate the `shortTranslation` field for history display.
-    public static func shortTranslationPrompt(targetLanguage: String) -> String {
+    /// Prompt for structured JSON meta extraction (source language + short translation).
+    public static func metaExtractionPrompt(targetLanguage: String) -> String {
         [
-            "You are a translator.",
-            "Translate the following text into \(targetLanguage).",
-            "Provide ONLY the exact translation variants separated by commas. Nothing else — no explanations, no notes, no examples, no formatting.",
-            "If the source text is already in \(targetLanguage), translate it into English instead."
+            "You are a professional translator.",
+            "Identify the source language of the given text and provide a concise translation into \(targetLanguage).",
+            "For sourceLanguage: state the language name in \(targetLanguage) followed by its ISO 639-1 code in parentheses (e.g. \"Польский (pl)\" if target is Russian).",
+            "For shortTranslation: provide only the main translation variants separated by commas, without any explanations, formatting, or extra text.",
+            "If the source text is already in \(targetLanguage), translate into English instead."
         ].joined(separator: " ")
     }
 }

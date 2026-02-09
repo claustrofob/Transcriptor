@@ -35,12 +35,23 @@ struct HistoryView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
 
-                                    Text(result.targetLanguage)
-                                        .font(.caption2)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(.fill.tertiary)
-                                        .clipShape(Capsule())
+                                    HStack(spacing: 6) {
+                                        if let sourceLanguage = result.sourceLanguage {
+                                            Text(sourceLanguage)
+                                                .font(.caption2)
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(.fill.tertiary)
+                                                .clipShape(Capsule())
+                                        }
+
+                                        Text("→ \(result.targetLanguage)")
+                                            .font(.caption2)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(.fill.tertiary)
+                                            .clipShape(Capsule())
+                                    }
                                 }
                                 .padding(.vertical, 4)
                             }

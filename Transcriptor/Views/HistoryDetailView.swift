@@ -23,6 +23,11 @@ struct HistoryDetailView: View {
                 }
 
                 HStack {
+                    if let sourceLanguage = result.sourceLanguage {
+                        Label(sourceLanguage, systemImage: "textformat")
+                        Image(systemName: "arrow.right")
+                            .font(.caption2)
+                    }
                     Label(result.targetLanguage, systemImage: "globe")
                     Spacer()
                     Label(result.model, systemImage: "cpu")
