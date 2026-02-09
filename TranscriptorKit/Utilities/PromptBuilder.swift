@@ -68,7 +68,7 @@ public enum PromptBuilder {
             "You are a professional translator.",
             "Identify the source language of the given text and provide a concise translation into \(targetLanguage).",
             "For sourceLanguage: state the language name in \(targetLanguage) followed by its ISO 639-1 code in parentheses (e.g. \"Польский (pl)\" if target is Russian).",
-            "For shortTranslation: provide only the main translation variants separated by commas, without any explanations, formatting, or extra text.",
+            "For shortTranslation: provide only the main translation variants separated by commas, without any explanations or extra text. Do NOT use any Markdown formatting (no ** or * or _). Plain text only.",
             "If the source text is already in \(targetLanguage), translate into English instead."
         ]
 

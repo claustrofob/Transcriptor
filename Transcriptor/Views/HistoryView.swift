@@ -30,7 +30,7 @@ struct HistoryView: View {
                                         .lineLimit(1)
                                         .font(.headline)
 
-                                    Text(result.shortTranslation ?? result.translatedText)
+                                    Text(result.shortTranslation ?? result.translatedText.strippingMarkdown)
                                         .lineLimit(1)
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)

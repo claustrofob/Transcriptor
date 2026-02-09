@@ -179,17 +179,20 @@ struct TranslationView: View {
             var metaSourceLanguage: String?
             var metaExamples: [TranslationExample] = []
 
-            if let meta = try? await GeminiService.shared.extractTranslationMeta(
-                text: text,
-                targetLanguage: settings.targetLanguage,
-                model: settings.model,
-                detailLevel: settings.detailLevel
-            ) {
+            do {
+                let meta = try await GeminiService.shared.extractTranslationMeta(
+                    text: text,
+                    targetLanguage: settings.targetLanguage,
+                    model: settings.model,
+                    detailLevel: settings.detailLevel
+                )
                 shortTranslation = meta.shortTranslation
                 metaSourceLanguage = meta.sourceLanguage
                 metaExamples = meta.examples
                 self.sourceLanguage = meta.sourceLanguage
                 self.examples = meta.examples
+            } catch {
+                print("[TranslationView] Meta extraction failed: \(error)")
             }
 
             // Save to history
