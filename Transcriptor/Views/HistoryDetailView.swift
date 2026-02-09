@@ -7,7 +7,6 @@ struct HistoryDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Original text
                 GroupBox {
                     Text(result.sourceText)
                         .textSelection(.enabled)
@@ -16,10 +15,12 @@ struct HistoryDetailView: View {
                     Label("Original", systemImage: "text.quote")
                 }
 
-                // Translation + examples + copy button
-                TranslationContentView(result: result)
+                GroupBox {
+                    TranslationContentView(result: result)
+                } label: {
+                    Label("Translation", systemImage: "text.bubble")
+                }
 
-                // Metadata
                 HStack {
                     if let sourceLanguage = result.sourceLanguage {
                         Label(sourceLanguage, systemImage: "textformat")
@@ -41,5 +42,14 @@ struct HistoryDetailView: View {
         }
         .navigationTitle("Translation")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    UIPasteboard.general.string = result.translatedText
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+            }
+        }
     }
 }

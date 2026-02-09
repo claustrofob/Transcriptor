@@ -11,6 +11,7 @@ struct TranslationView: View {
     @State private var clipboardText = ""
     @State private var sourceLanguage: String?
     @State private var examples: [TranslationExample] = []
+    @State private var copied = false
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
@@ -60,12 +61,50 @@ struct TranslationView: View {
                     } else if !translatedText.isEmpty {
                         Divider()
 
-                        TranslationContentView(
-                            translatedText: translatedText,
-                            sourceLanguage: sourceLanguage,
-                            examples: examples
-                        )
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Translation")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Spacer()
+
+                                if let sourceLanguage {
+                                    Label(sourceLanguage, systemImage: "textformat")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(.fill.tertiary)
+                                        .clipShape(Capsule())
+                                }
+                            }
+
+                            TranslationContentView(
+                                translatedText: translatedText,
+                                examples: examples
+                            )
+                        }
                         .id("translation")
+
+                        // Copy button
+                        Button {
+                            UIPasteboard.general.string = translatedText
+                            copied = true
+                            Task {
+                                try? await Task.sleep(for: .seconds(2))
+                                copied = false
+                            }
+                        } label: {
+                            Label(
+                                copied ? "Copied!" : "Copy Translation",
+                                systemImage: copied ? "checkmark" : "doc.on.doc"
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(copied ? .green : nil)
                     }
                 }
                 .padding()
@@ -81,6 +120,7 @@ struct TranslationView: View {
                         translatedText = ""
                         sourceLanguage = nil
                         examples = []
+                        copied = false
                         error = nil
                     } label: {
                         Image(systemName: "trash")
@@ -117,6 +157,7 @@ struct TranslationView: View {
         translatedText = ""
         sourceLanguage = nil
         examples = []
+        copied = false
         error = nil
 
         let settings = SettingsManager.shared.settings
