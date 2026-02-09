@@ -63,8 +63,7 @@ struct TranslationView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
 
-                            Text(translatedText)
-                                .textSelection(.enabled)
+                            MarkdownText(translatedText)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         .id("translation")

@@ -39,8 +39,7 @@ struct ActionView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.vertical, 8)
                         } else {
-                            Text(translatedText)
-                                .textSelection(.enabled)
+                            MarkdownText(translatedText)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     } label: {

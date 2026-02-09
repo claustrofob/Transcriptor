@@ -16,8 +16,7 @@ struct HistoryDetailView: View {
                 }
 
                 GroupBox {
-                    Text(result.translatedText)
-                        .textSelection(.enabled)
+                    MarkdownText(result.translatedText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } label: {
                     Label("Translation", systemImage: "text.bubble")
