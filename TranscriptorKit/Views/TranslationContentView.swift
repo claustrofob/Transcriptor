@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Reusable view that displays translation content: normal form + synonyms + translation text + examples.
+/// Reusable view that displays translation content: source language badge + normal form + synonyms + translation text + examples.
 /// Used in TranslationView, ActionView, and HistoryDetailView.
 public struct TranslationContentView: View {
 
+    private let sourceLanguage: String?
     private let normalForm: String?
     private let synonyms: String?
     private let translatedText: String
@@ -13,8 +14,10 @@ public struct TranslationContentView: View {
         normalForm: String? = nil,
         synonyms: String? = nil,
         translatedText: String,
+        sourceLanguage: String? = nil,
         examples: [TranslationExample] = []
     ) {
+        self.sourceLanguage = sourceLanguage
         self.normalForm = normalForm
         self.synonyms = synonyms
         self.translatedText = translatedText
@@ -23,6 +26,7 @@ public struct TranslationContentView: View {
 
     /// Initialize from a persisted TranslationResult.
     public init(result: TranslationResult) {
+        self.sourceLanguage = result.sourceLanguage
         self.normalForm = result.normalForm
         self.synonyms = result.synonyms
         self.translatedText = result.translatedText
@@ -31,6 +35,17 @@ public struct TranslationContentView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Source language badge
+            if let sourceLanguage {
+                Label(sourceLanguage, systemImage: "textformat")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.fill.tertiary)
+                    .clipShape(Capsule())
+            }
+
             // Normal (dictionary) form in source language + synonyms
             if let normalForm, !normalForm.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {

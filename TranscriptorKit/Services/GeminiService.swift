@@ -38,23 +38,23 @@ public actor GeminiService {
             properties: [
                 "normalForm": JSONSchema(
                     type: "STRING",
-                    description: "Dictionary form of the input word in the source language"
+                    description: "Dictionary/lemma form of the input word. MUST be in the SOURCE language (same language as input), NOT in \(lang)."
                 ),
                 "synonyms": JSONSchema(
                     type: "STRING",
-                    description: "Synonyms in the source language, comma-separated"
+                    description: "Synonyms of the input word in the SOURCE language (same language as input), NOT in \(lang). Comma-separated. These must be words in the original language, not translations."
                 ),
                 "translatedText": JSONSchema(
                     type: "STRING",
-                    description: "Full translation and explanation written in \(lang). MUST be in \(lang), not English."
+                    description: "Full translation and explanation. MUST be written entirely in \(lang)."
                 ),
                 "sourceLanguage": JSONSchema(
                     type: "STRING",
-                    description: "Name of the source language written in \(lang) with ISO code"
+                    description: "Name of the source language written in \(lang) with ISO 639-1 code in parentheses."
                 ),
                 "shortTranslation": JSONSchema(
                     type: "STRING",
-                    description: "Brief translation variants in \(lang), comma-separated"
+                    description: "Brief translation variants in \(lang), comma-separated."
                 ),
                 "examples": JSONSchema(
                     type: "ARRAY",

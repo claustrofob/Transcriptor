@@ -9,7 +9,6 @@ struct ActionView: View {
     @State private var translatedText = ""
     @State private var isTranslating = true
     @State private var errorMessage: String?
-    @State private var copied = false
     @State private var sourceLanguage: String?
     @State private var normalForm: String?
     @State private var synonyms: String?
@@ -27,20 +26,8 @@ struct ActionView: View {
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } label: {
-                        HStack {
-                            Label("Original", systemImage: "text.quote")
-                                .font(.caption)
-                            Spacer()
-                            if let sourceLanguage {
-                                Text(sourceLanguage)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 3)
-                                    .background(.fill.tertiary)
-                                    .clipShape(Capsule())
-                            }
-                        }
+                        Label("Original", systemImage: "text.quote")
+                            .font(.caption)
                     }
 
                     // Translation
@@ -62,6 +49,7 @@ struct ActionView: View {
                                 normalForm: normalForm,
                                 synonyms: synonyms,
                                 translatedText: translatedText,
+                                sourceLanguage: sourceLanguage,
                                 examples: examples
                             )
                         }
@@ -80,20 +68,7 @@ struct ActionView: View {
                 }
 
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        UIPasteboard.general.string = translatedText
-                        copied = true
-                        Task {
-                            try? await Task.sleep(for: .seconds(2))
-                            copied = false
-                        }
-                    } label: {
-                        Label(
-                            copied ? "Copied!" : "Copy",
-                            systemImage: copied ? "checkmark" : "doc.on.doc"
-                        )
-                    }
-                    .disabled(translatedText.isEmpty)
+                    CopyTranslationButton(translatedText)
                 }
             }
             .task { await translate() }

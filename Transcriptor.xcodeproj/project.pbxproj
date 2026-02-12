@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0303F5C8379D70B20CBEF812 /* TranslationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3E970626DA2445D5FB6660 /* TranslationView.swift */; };
+		7D2C8B6A5F4E0D9C1B3A7F2E /* CopyTranslationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A7F2E1B9C0D4E5F6A8B7C2D /* CopyTranslationButton.swift */; };
 		030EBCAAFEAA4303AFFA7E0A /* TranscriptorAction.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FEC14C295F62D1659BA5F576 /* TranscriptorAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		088BB9C3F868C5A5CD058C66 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36678DFE6C19CB8EE01F9E4 /* HistoryStore.swift */; };
 		0BE3992EF85964AD9234511A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28AA66F97A0943F6C63A13D6 /* MainTabView.swift */; };
@@ -86,6 +87,7 @@
 
 /* Begin PBXFileReference section */
 		1A8329366697D61096558FD2 /* String+Markdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Markdown.swift"; sourceTree = "<group>"; };
+		3A7F2E1B9C0D4E5F6A8B7C2D /* CopyTranslationButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyTranslationButton.swift; sourceTree = "<group>"; };
 		2433F6B103C725A051723877 /* ActionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionView.swift; sourceTree = "<group>"; };
 		24FB2173B48374DD1339F4CE /* ActionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionViewController.swift; sourceTree = "<group>"; };
 		26F5D5C5488BB17BF8F13016 /* Transcriptor.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Transcriptor.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -239,6 +241,7 @@
 		CCF4880C27AB66F10A8BD650 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				3A7F2E1B9C0D4E5F6A8B7C2D /* CopyTranslationButton.swift */,
 				FDE969D62E7F94CC7CAF370C /* ExamplesView.swift */,
 				67B2C3898A62A9432FD43CA0 /* TranslationContentView.swift */,
 			);
@@ -418,6 +421,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A641958B5C430EB0DE04BD74 /* AppConstants.swift in Sources */,
+				7D2C8B6A5F4E0D9C1B3A7F2E /* CopyTranslationButton.swift in Sources */,
 				B478CF61790C45358DFD08A3 /* ExamplesView.swift in Sources */,
 				16D4C0A1708C4A3765AE90AF /* GeminiModels.swift in Sources */,
 				E2F358A6EB33903A7E3130CB /* GeminiService.swift in Sources */,

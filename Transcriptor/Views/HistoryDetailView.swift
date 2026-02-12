@@ -22,11 +22,6 @@ struct HistoryDetailView: View {
                 }
 
                 HStack {
-                    if let sourceLanguage = result.sourceLanguage {
-                        Label(sourceLanguage, systemImage: "textformat")
-                        Image(systemName: "arrow.right")
-                            .font(.caption2)
-                    }
                     Label(result.targetLanguage, systemImage: "globe")
                     Spacer()
                     Label(result.model, systemImage: "cpu")
@@ -44,11 +39,7 @@ struct HistoryDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    UIPasteboard.general.string = result.translatedText
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
+                CopyTranslationButton(result.translatedText)
             }
         }
     }

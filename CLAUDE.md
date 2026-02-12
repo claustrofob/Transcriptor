@@ -102,11 +102,17 @@ iOS-приложение для перевода текста через Google 
 ## Shared UI
 
 `TranslationContentView` (TranscriptorKit) — переиспользуемая view для отображения контента перевода:
+- Source language badge (опционально)
+- Нормальная форма + синонимы
 - Текст перевода (plain Text)
 - Список примеров (ExamplesView), отделённый Divider
 
-Используется в: TranslationView, ActionView, HistoryDetailView.
-Source language badge и кнопка копирования реализуются каждым экраном отдельно (разный дизайн).
+`CopyTranslationButton` (TranscriptorKit) — кнопка копирования с анимацией "Copied!":
+- Параметры: text, label (default "Copy"), fullWidth (default false)
+- fullWidth: true — bordered стиль на всю ширину, зелёный tint при копировании
+- fullWidth: false — компактная кнопка для toolbar
+
+Обе view используются в: TranslationView, ActionView, HistoryDetailView.
 
 ## Верификация
 
