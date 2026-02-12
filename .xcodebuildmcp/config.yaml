@@ -1,0 +1,6 @@
+schemaVersion: 1
+sessionDefaults:
+  projectPath: /Users/claus/Projects/Transcriptor/Transcriptor.xcodeproj
+  scheme: Transcriptor
+  simulatorId: 70415197-FE2A-4E4A-B67E-9028C66A24FC
+  bundleId: com.claustrofob.Transcriptor

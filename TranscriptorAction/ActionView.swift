@@ -11,6 +11,8 @@ struct ActionView: View {
     @State private var errorMessage: String?
     @State private var copied = false
     @State private var sourceLanguage: String?
+    @State private var normalForm: String?
+    @State private var synonyms: String?
     @State private var examples: [TranslationExample] = []
 
     @Environment(\.modelContext) private var modelContext
@@ -57,6 +59,8 @@ struct ActionView: View {
                             .padding(.vertical, 8)
                         } else {
                             TranslationContentView(
+                                normalForm: normalForm,
+                                synonyms: synonyms,
                                 translatedText: translatedText,
                                 examples: examples
                             )
@@ -107,46 +111,29 @@ struct ActionView: View {
             return
         }
 
-        let stream = GeminiService.shared.translateStreaming(
-            text: sourceText,
-            settings: settings
-        )
-
         do {
-            for try await token in stream {
-                translatedText += token
-            }
+            let meta = try await GeminiService.shared.translateFull(
+                text: sourceText,
+                settings: settings
+            )
 
-            // Extract structured metadata via JSON mode
-            var shortTranslation: String?
-            var metaSourceLanguage: String?
-            var metaExamples: [TranslationExample] = []
-
-            do {
-                let meta = try await GeminiService.shared.extractTranslationMeta(
-                    text: sourceText,
-                    targetLanguage: settings.targetLanguage,
-                    model: settings.model,
-                    detailLevel: settings.detailLevel
-                )
-                shortTranslation = meta.shortTranslation
-                metaSourceLanguage = meta.sourceLanguage
-                metaExamples = meta.examples
-                self.sourceLanguage = meta.sourceLanguage
-                self.examples = meta.examples
-            } catch {
-                print("[ActionView] Meta extraction failed: \(error)")
-            }
+            translatedText = meta.translatedText
+            sourceLanguage = meta.sourceLanguage
+            normalForm = meta.normalForm
+            synonyms = meta.synonyms.isEmpty ? nil : meta.synonyms
+            examples = meta.examples
 
             // Save to history
             let result = TranslationResult(
                 sourceText: sourceText,
-                translatedText: translatedText,
-                shortTranslation: shortTranslation,
-                sourceLanguage: metaSourceLanguage,
+                translatedText: meta.translatedText,
+                normalForm: meta.normalForm,
+                synonyms: meta.synonyms.isEmpty ? nil : meta.synonyms,
+                shortTranslation: meta.shortTranslation,
+                sourceLanguage: meta.sourceLanguage,
                 targetLanguage: settings.targetLanguage,
                 model: settings.model.rawValue,
-                examples: metaExamples
+                examples: meta.examples
             )
             modelContext.insert(result)
             try? modelContext.save()

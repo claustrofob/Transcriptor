@@ -18,7 +18,7 @@ iOS-приложение для перевода текста через Google 
 - iOS 26+, universal (iPhone + iPad)
 - SwiftUI, Swift Concurrency (async/await, actors)
 - SwiftData (история переводов)
-- URLSession SSE streaming (Google Gemini API)
+- URLSession + Gemini REST API (JSON mode)
 - Ноль сторонних зависимостей
 
 ## Ключевые идентификаторы
@@ -63,37 +63,36 @@ iOS-приложение для перевода текста через Google 
 - Detail Level
 - About
 
-## Двухфазный перевод
+## Перевод (единый JSON-запрос)
 
-Перевод выполняется в два этапа:
+Один запрос к Gemini API через `generateContent` с `response_mime_type: "application/json"` + `response_schema`.
+Возвращает все данные сразу: перевод, метаданные, примеры.
 
-### Фаза 1: Streaming (Markdown)
-- Модель: `streamGenerateContent?alt=sse`
-- Промпт генерирует основной текст перевода в Markdown (нормальная форма, грамматика, значения)
-- Примеры НЕ включаются в streaming — они приходят отдельно из JSON
-- Результат отображается через `MarkdownText` (парсит блочный и inline Markdown)
-
-### Фаза 2: JSON meta extraction
-- Модель: `generateContent` с `response_mime_type: "application/json"` + `response_schema`
-- Извлекает структурированные метаданные для UI и истории
+**Метод:** `GeminiService.translateFull(text:settings:) -> TranslationMeta`
 
 **JSON Schema ответа:**
 ```json
 {
+  "normalForm": "podekscytowany",
+  "synonyms": "podniecony, rozentuzjazmowany, ożywiony",
+  "translatedText": "прилагательное (м.р.)\nвзволнованный, возбуждённый...",
   "sourceLanguage": "Польский (pl)",
-  "shortTranslation": "ещё, всё ещё, пока",
+  "shortTranslation": "взволнованный, возбуждённый",
   "examples": [
     {
-      "original": "Jeszcze nie skończyłem.",
-      "translation": "Я ещё не закончил."
+      "original": "Jestem podekscytowany tą wiadomością.",
+      "translation": "Я взволнован этой новостью."
     }
   ]
 }
 ```
 
 **Поля:**
+- `normalForm` (string, required) — словарная (начальная) форма слова на языке оригинала. Существительное → им.п. ед.ч., прилагательное → им.п. ед.ч. м.р., глагол → инфинитив
+- `synonyms` (string, required) — синонимы на языке оригинала через запятую. Пустая строка если нет синонимов
+- `translatedText` (string, required) — полный текст перевода, plain text (нумерованные/ненумерованные списки через \n, без Markdown)
 - `sourceLanguage` (string, required) — язык оригинала на target language + ISO 639-1 код в скобках
-- `shortTranslation` (string, required) — краткий перевод через запятую, без форматирования
+- `shortTranslation` (string, required) — краткий перевод через запятую, plain text (без Markdown)
 - `examples` (array, required) — примеры использования:
   - Concise: пустой массив `[]`
   - Standard: 3-5 примеров
@@ -103,7 +102,7 @@ iOS-приложение для перевода текста через Google 
 ## Shared UI
 
 `TranslationContentView` (TranscriptorKit) — переиспользуемая view для отображения контента перевода:
-- Markdown-текст перевода (MarkdownText)
+- Текст перевода (plain Text)
 - Список примеров (ExamplesView), отделённый Divider
 
 Используется в: TranslationView, ActionView, HistoryDetailView.
@@ -113,7 +112,7 @@ Source language badge и кнопка копирования реализуют�
 
 1. Собрать и запустить на симуляторе — основное приложение должно открыться
 2. Ввести API key в Settings, проверить что сохраняется (перезапуск приложения)
-3. Ввести текст в TranslationView → нажать Translate → streaming перевод
+3. Ввести текст в TranslationView → нажать Translate → перевод появляется целиком
 4. Проверить историю: перевод появляется в History
 5. На реальном устройстве: выделить текст в Safari/Notes → Share → Transcriptor → перевод в модальном окне
 6. Clipboard: скопировать текст → переключиться в Transcriptor → предложение перевести

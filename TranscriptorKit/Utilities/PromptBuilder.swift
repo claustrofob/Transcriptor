@@ -2,85 +2,74 @@ import Foundation
 
 public enum PromptBuilder {
 
-    /// Full translation prompt used for the main translation view (streaming, Markdown output).
-    public static func systemPrompt(for settings: TranslationSettings) -> String {
+    /// Unified translation prompt — returns JSON with all translation data.
+    /// All fields are plain text — no Markdown formatting anywhere.
+    public static func translationPrompt(for settings: TranslationSettings) -> String {
         let lang = settings.targetLanguage
 
-        var parts: [String] = []
+        return """
+        You are a professional translator. You translate words and phrases into \(lang).
+        ALL your output MUST be in \(lang) unless specified otherwise below.
 
-        parts.append("You are a professional translator and linguist.")
-        parts.append("Translate the following text into \(lang).")
-        parts.append("""
-        CRITICAL LANGUAGE RULE: Your ENTIRE response — all labels, grammatical terms, section headers, \
-        and explanations — MUST be written in \(lang). \
-        The ONLY exception is the original text and example sentences in the source language. \
-        Never use English or any third language for labels or terms.
-        """)
-        parts.append("""
-        Use Markdown formatting in your response: **bold** for the normal form and key terms.
-        """)
+        CRITICAL: The translation target language is \(lang). Write all translations, explanations, and grammatical labels in \(lang).
 
-        switch settings.detailLevel {
-        case .concise:
-            parts.append("""
-            Provide:
-            - The word/phrase in its dictionary (normal) form in **bold**.
-            - Its grammatical type and gender/number in \(lang) (e.g. if target is Russian: \
-            "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
-            - Translation variants separated by commas.
-            - Brief note on the context where this word/phrase is typically used.
-            Keep it compact. No examples, no numbered lists.
-            """)
+        FORMATTING: No Markdown. No **, *, _, #, backticks. Plain text only. Use \\n for line breaks. Numbered lists: "1. ", "2. ".
 
-        case .standard:
-            parts.append("""
-            Provide:
-            - The word/phrase in its dictionary (normal) form in **bold**.
-            - Its grammatical type and gender/number in \(lang) (e.g. if target is Russian: \
-            "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
-            - Translation variants separated by commas.
-            - Brief note on the context where this word/phrase is typically used.
-            Do NOT include any examples — they will be provided separately.
-            """)
+        LANGUAGE RULES FOR EACH JSON FIELD:
+        • "normalForm" → IN THE SOURCE LANGUAGE (the language of the input). Dictionary/lemma form: noun → nominative singular; adjective → nominative singular masculine; verb → infinitive; pronoun → dictionary form. If already in normal form, repeat as-is. For phrases, provide the key word in normal form.
+        • "synonyms" → IN THE SOURCE LANGUAGE. 2-5 synonyms or related words in the same language as the input. Comma-separated. Empty string if none.
+        • "translatedText" → IN \(lang). This is the main translation output. Everything here MUST be written in \(lang): grammatical labels, meanings, explanations. NEVER write this field in English or any other language except \(lang).
+        • "shortTranslation" → IN \(lang). Only the main translation variants separated by commas. No explanations. MUST be in \(lang).
+        • "sourceLanguage" → IN \(lang). Language name in \(lang) + ISO 639-1 code in parentheses (example: "Польский (pl)" when \(lang) is Russian).
+        • "examples" → "original" in the SOURCE LANGUAGE, "translation" in \(lang). The "translation" field MUST be in \(lang).
 
-        case .detailed:
-            parts.append("""
-            Provide:
-            - The word/phrase in its dictionary (normal) form in **bold**.
-            - Its grammatical type and gender/number in \(lang) (e.g. if target is Russian: \
-            "прилагательное", "глагол", "существительное (м.р.)", "причастие (ж.р., ед.ч.)").
-            - Translation variants separated by commas.
-            - Brief note on the context where this word/phrase is typically used.
-            Then provide a detailed numbered list of each meaning/sense of the word. \
-            Each numbered item: the word variant with its translation into \(lang). \
-            Do NOT include usage examples — they will be provided separately.
-            """)
-        }
+        CONTENT OF "translatedText" (write ALL of this in \(lang)):
+        \(translatedTextInstructions(for: settings.detailLevel, lang: lang))
 
-        parts.append("If the source text is already in \(lang), translate it into English instead.")
+        CONTENT OF "examples":
+        \(examplesInstructions(for: settings.detailLevel, lang: lang))
 
-        return parts.joined(separator: "\n")
+        If the input is already in \(lang), translate into English instead (English becomes the target for all fields above).
+
+        REMINDER: translatedText, shortTranslation, sourceLanguage, and example translations MUST be in \(lang). Do NOT use English for these fields.
+        """
     }
 
-    /// Prompt for structured JSON meta extraction (source language + short translation + examples).
-    public static func metaExtractionPrompt(targetLanguage: String, detailLevel: TranslationSettings.DetailLevel) -> String {
-        var parts = [
-            "You are a professional translator.",
-            "Identify the source language of the given text and provide a concise translation into \(targetLanguage).",
-            "For sourceLanguage: state the language name in \(targetLanguage) followed by its ISO 639-1 code in parentheses (e.g. \"Польский (pl)\" if target is Russian).",
-            "For shortTranslation: provide only the main translation variants separated by commas, without any explanations or extra text. Do NOT use any Markdown formatting (no ** or * or _). Plain text only.",
-            "If the source text is already in \(targetLanguage), translate into English instead."
-        ]
-
-        switch detailLevel {
+    private static func translatedTextInstructions(for level: TranslationSettings.DetailLevel, lang: String) -> String {
+        switch level {
         case .concise:
-            parts.append("For examples: return an empty array [].")
+            return """
+            - Grammatical type and gender/number in \(lang) (e.g. "существительное (ср.р.)", "глагол", "прилагательное (м.р.)").
+            - Translation variants separated by commas.
+            - Brief context note.
+            Keep it compact. No examples, no numbered lists.
+            """
         case .standard:
-            parts.append("For examples: provide 3-5 usage examples in different contexts. Each example has 'original' (sentence in the source language) and 'translation' (translation into \(targetLanguage)).")
+            return """
+            - Grammatical type and gender/number in \(lang).
+            - Translation variants separated by commas.
+            - Brief context note.
+            Do NOT include usage examples here — they go into "examples".
+            """
         case .detailed:
-            parts.append("For examples: provide 5-8 usage examples covering all significant meanings of the word/phrase. Each example has 'original' (sentence in the source language) and 'translation' (translation into \(targetLanguage)).")
+            return """
+            - Grammatical type and gender/number in \(lang).
+            - Translation variants separated by commas.
+            - Brief context note.
+            - Numbered list of each meaning/sense with its translation in \(lang).
+            Do NOT include usage examples here — they go into "examples".
+            """
         }
+    }
 
-        return parts.joined(separator: " ")
+    private static func examplesInstructions(for level: TranslationSettings.DetailLevel, lang: String) -> String {
+        switch level {
+        case .concise:
+            return "Return an empty array []."
+        case .standard:
+            return "3-5 examples. \"original\" = sentence in source language, \"translation\" = same sentence translated into \(lang)."
+        case .detailed:
+            return "5-8 examples covering all meanings. \"original\" = sentence in source language, \"translation\" = same sentence translated into \(lang)."
+        }
     }
 }

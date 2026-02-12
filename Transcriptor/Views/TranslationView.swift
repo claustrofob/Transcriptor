@@ -10,6 +10,8 @@ struct TranslationView: View {
     @State private var showClipboardAlert = false
     @State private var clipboardText = ""
     @State private var sourceLanguage: String?
+    @State private var normalForm: String?
+    @State private var synonyms: String?
     @State private var examples: [TranslationExample] = []
     @State private var copied = false
 
@@ -81,6 +83,8 @@ struct TranslationView: View {
                             }
 
                             TranslationContentView(
+                                normalForm: normalForm,
+                                synonyms: synonyms,
                                 translatedText: translatedText,
                                 examples: examples
                             )
@@ -119,6 +123,8 @@ struct TranslationView: View {
                         sourceText = ""
                         translatedText = ""
                         sourceLanguage = nil
+                        normalForm = nil
+                        synonyms = nil
                         examples = []
                         copied = false
                         error = nil
@@ -156,54 +162,41 @@ struct TranslationView: View {
         isTranslating = true
         translatedText = ""
         sourceLanguage = nil
+        normalForm = nil
+        synonyms = nil
         examples = []
         copied = false
         error = nil
 
         let settings = SettingsManager.shared.settings
-        let stream = GeminiService.shared.translateStreaming(text: text, settings: settings)
 
         do {
-            var isFirstChunk = true
-            for try await token in stream {
-                translatedText += token
-                if isFirstChunk {
-                    isFirstChunk = false
-                    withAnimation {
-                        proxy.scrollTo("translation", anchor: .top)
-                    }
-                }
-            }
-            // Extract structured metadata (source language + short translation + examples) via JSON mode
-            var shortTranslation: String?
-            var metaSourceLanguage: String?
-            var metaExamples: [TranslationExample] = []
+            let meta = try await GeminiService.shared.translateFull(
+                text: text,
+                settings: settings
+            )
 
-            do {
-                let meta = try await GeminiService.shared.extractTranslationMeta(
-                    text: text,
-                    targetLanguage: settings.targetLanguage,
-                    model: settings.model,
-                    detailLevel: settings.detailLevel
-                )
-                shortTranslation = meta.shortTranslation
-                metaSourceLanguage = meta.sourceLanguage
-                metaExamples = meta.examples
-                self.sourceLanguage = meta.sourceLanguage
-                self.examples = meta.examples
-            } catch {
-                print("[TranslationView] Meta extraction failed: \(error)")
+            translatedText = meta.translatedText
+            sourceLanguage = meta.sourceLanguage
+            normalForm = meta.normalForm
+            synonyms = meta.synonyms.isEmpty ? nil : meta.synonyms
+            examples = meta.examples
+
+            withAnimation {
+                proxy.scrollTo("translation", anchor: .top)
             }
 
             // Save to history
             let result = TranslationResult(
                 sourceText: text,
-                translatedText: translatedText,
-                shortTranslation: shortTranslation,
-                sourceLanguage: metaSourceLanguage,
+                translatedText: meta.translatedText,
+                normalForm: meta.normalForm,
+                synonyms: meta.synonyms.isEmpty ? nil : meta.synonyms,
+                shortTranslation: meta.shortTranslation,
+                sourceLanguage: meta.sourceLanguage,
                 targetLanguage: settings.targetLanguage,
                 model: settings.model.rawValue,
-                examples: metaExamples
+                examples: meta.examples
             )
             modelContext.insert(result)
             try? modelContext.save()

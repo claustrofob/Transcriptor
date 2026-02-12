@@ -29,6 +29,8 @@
 				<key>NSExtensionActivationSupportsText</key>
 				<true/>
 			</dict>
+			<key>NSExtensionServiceToolbarIconFile</key>
+			<string>ActionIcon</string>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.ui-services</string>

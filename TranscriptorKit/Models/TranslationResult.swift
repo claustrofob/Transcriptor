@@ -5,6 +5,8 @@ import SwiftData
 public final class TranslationResult {
     public var sourceText: String
     public var translatedText: String
+    public var normalForm: String?
+    public var synonyms: String?
     public var shortTranslation: String?
     public var sourceLanguage: String?
     public var targetLanguage: String
@@ -26,6 +28,8 @@ public final class TranslationResult {
     public init(
         sourceText: String,
         translatedText: String,
+        normalForm: String? = nil,
+        synonyms: String? = nil,
         shortTranslation: String? = nil,
         sourceLanguage: String? = nil,
         targetLanguage: String,
@@ -34,6 +38,8 @@ public final class TranslationResult {
     ) {
         self.sourceText = sourceText
         self.translatedText = translatedText
+        self.normalForm = normalForm
+        self.synonyms = synonyms
         self.shortTranslation = shortTranslation
         self.sourceLanguage = sourceLanguage
         self.targetLanguage = targetLanguage

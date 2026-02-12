@@ -100,6 +100,9 @@ public final class JSONSchemaBox: Encodable, @unchecked Sendable {
 // MARK: - Translation Meta (JSON extraction result)
 
 public struct TranslationMeta: Decodable, Sendable {
+    public let normalForm: String
+    public let synonyms: String
+    public let translatedText: String
     public let sourceLanguage: String
     public let shortTranslation: String
     public let examples: [TranslationExample]

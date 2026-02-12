@@ -35,6 +35,14 @@ class ActionViewController: UIViewController {
             .modelContainer(container)
 
             let hostingController = UIHostingController(rootView: actionView)
+
+            // Enable interactive dismiss gesture
+            hostingController.isModalInPresentation = false
+            if let sheetController = hostingController.sheetPresentationController {
+                sheetController.prefersGrabberVisible = true
+                sheetController.detents = [.medium(), .large()]
+            }
+
             addChild(hostingController)
             view.addSubview(hostingController.view)
 
@@ -47,6 +55,32 @@ class ActionViewController: UIViewController {
             ])
 
             hostingController.didMove(toParent: self)
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        enableInteractiveDismiss()
+    }
+
+    /// Walk the entire view controller hierarchy to find every presentation controller
+    /// and allow interactive dismiss. Action Extensions are wrapped by the system in
+    /// additional container controllers, so we must traverse upward.
+    private func enableInteractiveDismiss() {
+        // Walk up parent chain — set isModalInPresentation = false on every VC
+        var vc: UIViewController? = self
+        while let current = vc {
+            current.isModalInPresentation = false
+            if let pc = current.presentationController {
+                pc.delegate = self
+            }
+            vc = current.parent
+        }
+
+        // Also try the presenting controller's presentation controller
+        if let presenting = presentingViewController {
+            presenting.isModalInPresentation = false
+            presenting.presentationController?.delegate = self
         }
     }
 
@@ -86,5 +120,21 @@ class ActionViewController: UIViewController {
         }
 
         return nil
+    }
+}
+
+// MARK: - Interactive dismiss support
+
+extension ActionViewController: UIAdaptivePresentationControllerDelegate {
+    func presentationControllerShouldDismiss(_ presentationController: UIPresentationController) -> Bool {
+        true
+    }
+
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        extensionContext?.completeRequest(returningItems: nil)
+    }
+
+    func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+        extensionContext?.completeRequest(returningItems: nil)
     }
 }
