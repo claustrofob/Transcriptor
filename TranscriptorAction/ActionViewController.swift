@@ -18,10 +18,7 @@ class ActionViewController: UIViewController {
                 return
             }
 
-            let container: ModelContainer
-            do {
-                container = try HistoryStore.makeContainer()
-            } catch {
+            guard let container = try? HistoryStore.makeContainer() else {
                 extensionContext?.completeRequest(returningItems: nil)
                 return
             }
@@ -34,27 +31,7 @@ class ActionViewController: UIViewController {
             )
             .modelContainer(container)
 
-            let hostingController = UIHostingController(rootView: actionView)
-
-            // Enable interactive dismiss gesture
-            hostingController.isModalInPresentation = false
-            if let sheetController = hostingController.sheetPresentationController {
-                sheetController.prefersGrabberVisible = true
-                sheetController.detents = [.medium(), .large()]
-            }
-
-            addChild(hostingController)
-            view.addSubview(hostingController.view)
-
-            hostingController.view.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
-                hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-                hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            ])
-
-            hostingController.didMove(toParent: self)
+            embedSwiftUIView(actionView)
         }
     }
 
@@ -63,11 +40,35 @@ class ActionViewController: UIViewController {
         enableInteractiveDismiss()
     }
 
+    // MARK: - Embedding
+
+    private func embedSwiftUIView<V: View>(_ rootView: V) {
+        let hostingController = UIHostingController(rootView: rootView)
+
+        hostingController.isModalInPresentation = false
+        if let sheetController = hostingController.sheetPresentationController {
+            sheetController.prefersGrabberVisible = true
+            sheetController.detents = [.medium(), .large()]
+        }
+
+        addChild(hostingController)
+        view.addSubview(hostingController.view)
+
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hostingController.view.topAnchor.constraint(equalTo: view.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            hostingController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+
+        hostingController.didMove(toParent: self)
+    }
+
     /// Walk the entire view controller hierarchy to find every presentation controller
     /// and allow interactive dismiss. Action Extensions are wrapped by the system in
     /// additional container controllers, so we must traverse upward.
     private func enableInteractiveDismiss() {
-        // Walk up parent chain — set isModalInPresentation = false on every VC
         var vc: UIViewController? = self
         while let current = vc {
             current.isModalInPresentation = false
@@ -77,7 +78,6 @@ class ActionViewController: UIViewController {
             vc = current.parent
         }
 
-        // Also try the presenting controller's presentation controller
         if let presenting = presentingViewController {
             presenting.isModalInPresentation = false
             presenting.presentationController?.delegate = self

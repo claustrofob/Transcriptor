@@ -37,20 +37,10 @@ struct HistoryView: View {
 
                                     HStack(spacing: 6) {
                                         if let sourceLanguage = result.sourceLanguage {
-                                            Text(sourceLanguage)
-                                                .font(.caption2)
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(.fill.tertiary)
-                                                .clipShape(Capsule())
+                                            LanguageBadge(sourceLanguage)
                                         }
 
-                                        Text("→ \(result.targetLanguage)")
-                                            .font(.caption2)
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(.fill.tertiary)
-                                            .clipShape(Capsule())
+                                        LanguageBadge("→ \(result.targetLanguage)")
                                     }
                                 }
                                 .padding(.vertical, 4)

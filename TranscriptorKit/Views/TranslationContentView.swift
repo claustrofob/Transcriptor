@@ -35,15 +35,8 @@ public struct TranslationContentView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Source language badge
             if let sourceLanguage {
-                Label(sourceLanguage, systemImage: "textformat")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(.fill.tertiary)
-                    .clipShape(Capsule())
+                LanguageBadge(sourceLanguage)
             }
 
             // Normal (dictionary) form in source language + synonyms

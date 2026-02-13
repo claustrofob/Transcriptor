@@ -23,62 +23,9 @@ struct TranslationView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    // Source text
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Original")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        TextField("Enter text to translate...", text: $sourceText, axis: .vertical)
-                            .lineLimit(1...)
-                            .padding(12)
-                            .background(.fill.tertiary)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            .focused($isTextFieldFocused)
-                    }
-
-                    // Translate button
-                    Button {
-                        isTextFieldFocused = false
-                        Task { await translate(scrollProxy: proxy) }
-                    } label: {
-                        HStack {
-                            if isTranslating {
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                            Text(isTranslating ? "Translating..." : "Translate")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating)
-
-                    // Translation result
-                    if let error {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
-                    } else if !translatedText.isEmpty {
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Translation")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            TranslationContentView(
-                                normalForm: normalForm,
-                                synonyms: synonyms,
-                                translatedText: translatedText,
-                                sourceLanguage: sourceLanguage,
-                                examples: examples
-                            )
-                        }
-                        .id("translation")
-
-                        CopyTranslationButton(translatedText, label: "Copy Translation", fullWidth: true)
-                    }
+                    sourceTextField
+                    translateButton(proxy: proxy)
+                    translationResult
                 }
                 .padding()
             }
@@ -89,13 +36,7 @@ struct TranslationView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        sourceText = ""
-                        translatedText = ""
-                        sourceLanguage = nil
-                        normalForm = nil
-                        synonyms = nil
-                        examples = []
-                        error = nil
+                        clearAll()
                     } label: {
                         Image(systemName: "trash")
                     }
@@ -121,52 +62,103 @@ struct TranslationView: View {
         }
     }
 
-    // MARK: - Translation
+    // MARK: - Subviews
 
-    private func translate(scrollProxy proxy: ScrollViewProxy) async {
-        let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+    private var sourceTextField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Original")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
-        isTranslating = true
+            TextField("Enter text to translate...", text: $sourceText, axis: .vertical)
+                .lineLimit(1...)
+                .padding(12)
+                .background(.fill.tertiary)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .focused($isTextFieldFocused)
+        }
+    }
+
+    private func translateButton(proxy: ScrollViewProxy) -> some View {
+        Button {
+            isTextFieldFocused = false
+            Task { await translate(scrollProxy: proxy) }
+        } label: {
+            HStack {
+                if isTranslating {
+                    ProgressView()
+                        .tint(.white)
+                }
+                Text(isTranslating ? "Translating..." : "Translate")
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating)
+    }
+
+    @ViewBuilder
+    private var translationResult: some View {
+        if let error {
+            ErrorLabel(error)
+        } else if !translatedText.isEmpty {
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Translation")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TranslationContentView(
+                    normalForm: normalForm,
+                    synonyms: synonyms,
+                    translatedText: translatedText,
+                    sourceLanguage: sourceLanguage,
+                    examples: examples
+                )
+            }
+            .id("translation")
+
+            CopyTranslationButton(translatedText, label: "Copy Translation", fullWidth: true)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func clearAll() {
+        sourceText = ""
         translatedText = ""
         sourceLanguage = nil
         normalForm = nil
         synonyms = nil
         examples = []
         error = nil
+    }
 
-        let settings = SettingsManager.shared.settings
+    private func translate(scrollProxy proxy: ScrollViewProxy) async {
+        let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        isTranslating = true
+        clearAll()
+        sourceText = text
 
         do {
-            let meta = try await GeminiService.shared.translateFull(
+            let output = try await TranslationHelper.translateAndSave(
                 text: text,
-                settings: settings
+                modelContext: modelContext
             )
 
-            translatedText = meta.translatedText
-            sourceLanguage = meta.sourceLanguage
-            normalForm = meta.normalForm
-            synonyms = meta.synonyms.isEmpty ? nil : meta.synonyms
-            examples = meta.examples
+            translatedText = output.translatedText
+            sourceLanguage = output.sourceLanguage
+            normalForm = output.normalForm
+            synonyms = output.synonyms
+            examples = output.examples
 
             withAnimation {
                 proxy.scrollTo("translation", anchor: .top)
             }
-
-            // Save to history
-            let result = TranslationResult(
-                sourceText: text,
-                translatedText: meta.translatedText,
-                normalForm: meta.normalForm,
-                synonyms: meta.synonyms.isEmpty ? nil : meta.synonyms,
-                shortTranslation: meta.shortTranslation,
-                sourceLanguage: meta.sourceLanguage,
-                targetLanguage: settings.targetLanguage,
-                model: settings.model.rawValue,
-                examples: meta.examples
-            )
-            modelContext.insert(result)
-            try? modelContext.save()
         } catch {
             self.error = error.localizedDescription
         }

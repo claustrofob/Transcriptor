@@ -8,7 +8,7 @@ struct ActionView: View {
 
     @State private var translatedText = ""
     @State private var isTranslating = true
-    @State private var errorMessage: String?
+    @State private var error: String?
     @State private var sourceLanguage: String?
     @State private var normalForm: String?
     @State private var synonyms: String?
@@ -32,9 +32,8 @@ struct ActionView: View {
 
                     // Translation
                     GroupBox {
-                        if let errorMessage {
-                            Label(errorMessage, systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(.red)
+                        if let error {
+                            ErrorLabel(error)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else if isTranslating && translatedText.isEmpty {
                             HStack {
@@ -78,42 +77,19 @@ struct ActionView: View {
     // MARK: - Translation
 
     private func translate() async {
-        let settings = SettingsManager.shared.settings
-
-        guard KeychainService.shared.loadAPIKey() != nil else {
-            errorMessage = "API key not configured. Please open Transcriptor and set your Google AI API key in Settings."
-            isTranslating = false
-            return
-        }
-
         do {
-            let meta = try await GeminiService.shared.translateFull(
+            let output = try await TranslationHelper.translateAndSave(
                 text: sourceText,
-                settings: settings
+                modelContext: modelContext
             )
 
-            translatedText = meta.translatedText
-            sourceLanguage = meta.sourceLanguage
-            normalForm = meta.normalForm
-            synonyms = meta.synonyms.isEmpty ? nil : meta.synonyms
-            examples = meta.examples
-
-            // Save to history
-            let result = TranslationResult(
-                sourceText: sourceText,
-                translatedText: meta.translatedText,
-                normalForm: meta.normalForm,
-                synonyms: meta.synonyms.isEmpty ? nil : meta.synonyms,
-                shortTranslation: meta.shortTranslation,
-                sourceLanguage: meta.sourceLanguage,
-                targetLanguage: settings.targetLanguage,
-                model: settings.model.rawValue,
-                examples: meta.examples
-            )
-            modelContext.insert(result)
-            try? modelContext.save()
+            translatedText = output.translatedText
+            sourceLanguage = output.sourceLanguage
+            normalForm = output.normalForm
+            synonyms = output.synonyms
+            examples = output.examples
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = error.localizedDescription
         }
 
         isTranslating = false

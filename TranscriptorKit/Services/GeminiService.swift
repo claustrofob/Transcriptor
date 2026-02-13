@@ -17,7 +17,10 @@ public actor GeminiService {
         let apiKey = try requireAPIKey()
         let urlString = "\(AppConstants.geminiBaseURL)/\(settings.model.rawValue):generateContent?key=\(apiKey)"
 
-        var request = URLRequest(url: URL(string: urlString)!)
+        guard let url = URL(string: urlString) else {
+            throw TranslationError.invalidResponse
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 60

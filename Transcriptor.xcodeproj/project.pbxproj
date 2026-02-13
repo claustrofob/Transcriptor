@@ -34,6 +34,9 @@
 		D59034A7C6B53147D9B4C85F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7503CD7B8496A092C019157 /* HistoryView.swift */; };
 		DA4C907B86311D18BBC12537 /* ActionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2433F6B103C725A051723877 /* ActionView.swift */; };
 		E2F358A6EB33903A7E3130CB /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D609DFB1E400168B82A6177 /* GeminiService.swift */; };
+		F1A2B3C4D5E6F7081234ABCD /* TranslationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718ABCDEF01 /* TranslationHelper.swift */; };
+		F1A2B3C4D5E6F7081234ABCE /* LanguageBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718ABCDEF02 /* LanguageBadge.swift */; };
+		F1A2B3C4D5E6F7081234ABCF /* ErrorLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718ABCDEF03 /* ErrorLabel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -116,6 +119,9 @@
 		FB23B4AA929F7DBC184C4078 /* TranscriptorKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TranscriptorKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDE969D62E7F94CC7CAF370C /* ExamplesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamplesView.swift; sourceTree = "<group>"; };
 		FEC14C295F62D1659BA5F576 /* TranscriptorAction.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TranscriptorAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F60718ABCDEF01 /* TranslationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationHelper.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718ABCDEF02 /* LanguageBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageBadge.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718ABCDEF03 /* ErrorLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLabel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -226,6 +232,7 @@
 			children = (
 				4D609DFB1E400168B82A6177 /* GeminiService.swift */,
 				B0D73E566A0B8CF32D5E580F /* KeychainService.swift */,
+				A1B2C3D4E5F60718ABCDEF01 /* TranslationHelper.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -242,7 +249,9 @@
 			isa = PBXGroup;
 			children = (
 				3A7F2E1B9C0D4E5F6A8B7C2D /* CopyTranslationButton.swift */,
+				A1B2C3D4E5F60718ABCDEF03 /* ErrorLabel.swift */,
 				FDE969D62E7F94CC7CAF370C /* ExamplesView.swift */,
+				A1B2C3D4E5F60718ABCDEF02 /* LanguageBadge.swift */,
 				67B2C3898A62A9432FD43CA0 /* TranslationContentView.swift */,
 			);
 			path = Views;
@@ -433,6 +442,9 @@
 				5BFF7F14C6414F6AED7A0D31 /* TranslationContentView.swift in Sources */,
 				5024E2AF38BC1DA96D3F7013 /* TranslationResult.swift in Sources */,
 				9CA5DEBE84D6E99380681499 /* TranslationSettings.swift in Sources */,
+				F1A2B3C4D5E6F7081234ABCD /* TranslationHelper.swift in Sources */,
+				F1A2B3C4D5E6F7081234ABCE /* LanguageBadge.swift in Sources */,
+				F1A2B3C4D5E6F7081234ABCF /* ErrorLabel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
