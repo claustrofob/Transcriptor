@@ -37,6 +37,9 @@
 		F1A2B3C4D5E6F7081234ABCD /* TranslationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718ABCDEF01 /* TranslationHelper.swift */; };
 		F1A2B3C4D5E6F7081234ABCE /* LanguageBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718ABCDEF02 /* LanguageBadge.swift */; };
 		F1A2B3C4D5E6F7081234ABCF /* ErrorLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718ABCDEF03 /* ErrorLabel.swift */; };
+		B1C2D3E4F5061728ABCDEF10 /* TranslationType.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728ABCDEF11 /* TranslationType.swift */; };
+		B1C2D3E4F5061728ABCDEF20 /* TextClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728ABCDEF21 /* TextClassifier.swift */; };
+		B1C2D3E4F5061728ABCDEF30 /* FoundationModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728ABCDEF31 /* FoundationModels.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,6 +125,9 @@
 		A1B2C3D4E5F60718ABCDEF01 /* TranslationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationHelper.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718ABCDEF02 /* LanguageBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageBadge.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718ABCDEF03 /* ErrorLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLabel.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728ABCDEF11 /* TranslationType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationType.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728ABCDEF21 /* TextClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextClassifier.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728ABCDEF31 /* FoundationModels.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FoundationModels.framework; path = System/Library/Frameworks/FoundationModels.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +136,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE1D49952951C2DD13673A2E /* TranscriptorKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1C2D3E4F5061728ABCDEF40 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1C2D3E4F5061728ABCDEF30 /* FoundationModels.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,6 +237,7 @@
 				504DE657D2AE25EDB1FF1123 /* GeminiModels.swift */,
 				87C814D63E5DF716F23BA6B2 /* TranslationResult.swift */,
 				27810B3115827D317479B7D8 /* TranslationSettings.swift */,
+				B1C2D3E4F5061728ABCDEF11 /* TranslationType.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -232,6 +247,7 @@
 			children = (
 				4D609DFB1E400168B82A6177 /* GeminiService.swift */,
 				B0D73E566A0B8CF32D5E580F /* KeychainService.swift */,
+				B1C2D3E4F5061728ABCDEF21 /* TextClassifier.swift */,
 				A1B2C3D4E5F60718ABCDEF01 /* TranslationHelper.swift */,
 			);
 			path = Services;
@@ -287,6 +303,7 @@
 			buildConfigurationList = F2B6B0FD9626B789816D4AA7 /* Build configuration list for PBXNativeTarget "TranscriptorKit" */;
 			buildPhases = (
 				874D1BCA9F47D5DD6708CF64 /* Sources */,
+				B1C2D3E4F5061728ABCDEF40 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -445,6 +462,8 @@
 				F1A2B3C4D5E6F7081234ABCD /* TranslationHelper.swift in Sources */,
 				F1A2B3C4D5E6F7081234ABCE /* LanguageBadge.swift in Sources */,
 				F1A2B3C4D5E6F7081234ABCF /* ErrorLabel.swift in Sources */,
+				B1C2D3E4F5061728ABCDEF10 /* TranslationType.swift in Sources */,
+				B1C2D3E4F5061728ABCDEF20 /* TextClassifier.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

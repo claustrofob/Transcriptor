@@ -9,10 +9,11 @@ public actor GeminiService {
     // MARK: - Unified translation (single JSON request)
 
     /// Performs translation in a single request using Gemini JSON mode.
-    /// Returns structured `TranslationMeta` with translatedText (Markdown), sourceLanguage, shortTranslation, examples.
+    /// Returns structured `TranslationMeta` with translatedText, sourceLanguage, and optionally normalForm, synonyms, examples.
     public func translateFull(
         text: String,
-        settings: TranslationSettings
+        settings: TranslationSettings,
+        translationType: TranslationType
     ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
         let urlString = "\(AppConstants.geminiBaseURL)/\(settings.model.rawValue):generateContent?key=\(apiKey)"
@@ -26,7 +27,42 @@ public actor GeminiService {
         request.timeoutInterval = 60
 
         let lang = settings.targetLanguage
+        let schema: JSONSchema
 
+        switch translationType {
+        case .word, .expression:
+            schema = buildFullSchema(lang: lang)
+        case .freeText:
+            schema = buildFreeTextSchema(lang: lang)
+        }
+
+        let config = GenerationConfig(
+            responseMimeType: "application/json",
+            responseSchema: schema
+        )
+
+        let body = GeminiRequest(
+            systemPrompt: PromptBuilder.translationPrompt(for: settings, translationType: translationType),
+            userText: text,
+            generationConfig: config
+        )
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTPResponse(response, data: data)
+
+        let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+        guard let jsonString = geminiResponse.text,
+              let jsonData = jsonString.data(using: .utf8) else {
+            throw TranslationError.emptyResponse
+        }
+
+        return try JSONDecoder().decode(TranslationMeta.self, from: jsonData)
+    }
+
+    // MARK: - JSON Schemas
+
+    private func buildFullSchema(lang: String) -> JSONSchema {
         let exampleSchema = JSONSchema(
             type: "OBJECT",
             properties: [
@@ -36,16 +72,16 @@ public actor GeminiService {
             required: ["original", "translation"]
         )
 
-        let schema = JSONSchema(
+        return JSONSchema(
             type: "OBJECT",
             properties: [
                 "normalForm": JSONSchema(
                     type: "STRING",
-                    description: "Dictionary/lemma form of the input word. MUST be in the SOURCE language (same language as input), NOT in \(lang)."
+                    description: "Dictionary/lemma form of the input. MUST be in the SOURCE language (same language as input), NOT in \(lang)."
                 ),
                 "synonyms": JSONSchema(
                     type: "STRING",
-                    description: "Synonyms of the input word in the SOURCE language (same language as input), NOT in \(lang). Comma-separated. These must be words in the original language, not translations."
+                    description: "Synonyms in the SOURCE language (same language as input), NOT in \(lang). Comma-separated. Empty string if none."
                 ),
                 "translatedText": JSONSchema(
                     type: "STRING",
@@ -67,29 +103,23 @@ public actor GeminiService {
             ],
             required: ["normalForm", "synonyms", "translatedText", "sourceLanguage", "shortTranslation", "examples"]
         )
+    }
 
-        let config = GenerationConfig(
-            responseMimeType: "application/json",
-            responseSchema: schema
+    private func buildFreeTextSchema(lang: String) -> JSONSchema {
+        JSONSchema(
+            type: "OBJECT",
+            properties: [
+                "translatedText": JSONSchema(
+                    type: "STRING",
+                    description: "Full translation of the input text. MUST be written entirely in \(lang)."
+                ),
+                "sourceLanguage": JSONSchema(
+                    type: "STRING",
+                    description: "Name of the source language written in \(lang) with ISO 639-1 code in parentheses."
+                )
+            ],
+            required: ["translatedText", "sourceLanguage"]
         )
-
-        let body = GeminiRequest(
-            systemPrompt: PromptBuilder.translationPrompt(for: settings),
-            userText: text,
-            generationConfig: config
-        )
-        request.httpBody = try JSONEncoder().encode(body)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try validateHTTPResponse(response, data: data)
-
-        let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
-        guard let jsonString = geminiResponse.text,
-              let jsonData = jsonString.data(using: .utf8) else {
-            throw TranslationError.emptyResponse
-        }
-
-        return try JSONDecoder().decode(TranslationMeta.self, from: jsonData)
     }
 
     // MARK: - Private helpers
