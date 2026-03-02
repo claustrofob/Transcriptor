@@ -10,6 +10,7 @@ struct TranslationView: View {
     @State private var showClipboardAlert = false
     @State private var clipboardText = ""
     @State private var sourceLanguage: String?
+    @State private var selectedSourceLanguage: TranslationSettings.SourceLanguage?
     @State private var normalForm: String?
     @State private var synonyms: String?
     @State private var examples: [TranslationExample] = []
@@ -110,11 +111,21 @@ struct TranslationView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                SourceLanguagePicker(
+                    selected: selectedSourceLanguage,
+                    fallbackLabel: sourceLanguage,
+                    isDisabled: isTranslating
+                ) { lang in
+                    LanguageFrequencyStore.shared.record(code: lang.code)
+                    selectedSourceLanguage = lang
+                    Task { await retranslate(with: lang) }
+                }
+
                 TranslationContentView(
                     normalForm: normalForm,
                     synonyms: synonyms,
                     translatedText: translatedText,
-                    sourceLanguage: sourceLanguage,
+                    sourceLanguage: nil,
                     examples: examples
                 )
             }
@@ -130,6 +141,7 @@ struct TranslationView: View {
         sourceText = ""
         translatedText = ""
         sourceLanguage = nil
+        selectedSourceLanguage = nil
         normalForm = nil
         synonyms = nil
         examples = []
@@ -152,6 +164,10 @@ struct TranslationView: View {
 
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
+            selectedSourceLanguage = TranslationSettings.sourceLanguage(fromGeminiString: output.sourceLanguage)
+            if let code = selectedSourceLanguage?.code {
+                LanguageFrequencyStore.shared.record(code: code)
+            }
             normalForm = output.normalForm
             synonyms = output.synonyms
             examples = output.examples
@@ -159,6 +175,35 @@ struct TranslationView: View {
             withAnimation {
                 proxy.scrollTo("translation", anchor: .top)
             }
+        } catch {
+            self.error = error.localizedDescription
+        }
+
+        isTranslating = false
+    }
+
+    private func retranslate(with lang: TranslationSettings.SourceLanguage) async {
+        let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        isTranslating = true
+        translatedText = ""
+        normalForm = nil
+        synonyms = nil
+        examples = []
+        error = nil
+
+        do {
+            let output = try await TranslationHelper.translateAndSave(
+                text: text,
+                modelContext: modelContext,
+                sourceLanguage: lang.name
+            )
+            translatedText = output.translatedText
+            sourceLanguage = output.sourceLanguage
+            normalForm = output.normalForm
+            synonyms = output.synonyms
+            examples = output.examples
         } catch {
             self.error = error.localizedDescription
         }

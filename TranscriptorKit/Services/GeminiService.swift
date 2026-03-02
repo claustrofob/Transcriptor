@@ -10,10 +10,13 @@ public actor GeminiService {
 
     /// Performs translation in a single request using Gemini JSON mode.
     /// Returns structured `TranslationMeta` with translatedText, sourceLanguage, and optionally normalForm, synonyms, examples.
+    /// Translates `text` using Gemini JSON mode.
+    /// Pass `sourceLanguage` (English name, e.g. "Polish") to override Gemini's auto-detection.
     public func translateFull(
         text: String,
         settings: TranslationSettings,
-        translationType: TranslationType
+        translationType: TranslationType,
+        sourceLanguage: String? = nil
     ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
         let urlString = "\(AppConstants.geminiBaseURL)/\(settings.model.rawValue):generateContent?key=\(apiKey)"
@@ -42,7 +45,7 @@ public actor GeminiService {
         )
 
         let body = GeminiRequest(
-            systemPrompt: PromptBuilder.translationPrompt(for: settings, translationType: translationType),
+            systemPrompt: PromptBuilder.translationPrompt(for: settings, translationType: translationType, sourceLanguageOverride: sourceLanguage),
             userText: text,
             generationConfig: config
         )
@@ -66,7 +69,10 @@ public actor GeminiService {
         let exampleSchema = JSONSchema(
             type: "OBJECT",
             properties: [
-                "original": JSONSchema(type: "STRING", description: "Sentence in the source language"),
+                "original": JSONSchema(
+                    type: "STRING",
+                    description: "A natural sentence in the source language using an inflected or conjugated form of the word as it appears in real speech — not necessarily the lemma form itself."
+                ),
                 "translation": JSONSchema(type: "STRING", description: "Same sentence translated into \(lang)")
             ],
             required: ["original", "translation"]
@@ -77,7 +83,7 @@ public actor GeminiService {
             properties: [
                 "normalForm": JSONSchema(
                     type: "STRING",
-                    description: "Dictionary/lemma form of the input. MUST be in the SOURCE language (same language as input), NOT in \(lang)."
+                    description: "The lemma (lexeme) of the input word — the canonical base form as found in a dictionary. MUST be in the SOURCE language, NEVER in \(lang). CRITICAL: Always return the lemma even when the user typed an inflected form. Rules: noun → nominative singular; verb → infinitive; adjective → nominative singular masculine; pronoun → nominative. Examples: 'biegałem'→'biegać', 'dogs'→'dog', 'красивого'→'красивый', 'gelaufen'→'laufen'."
                 ),
                 "synonyms": JSONSchema(
                     type: "STRING",
@@ -98,7 +104,7 @@ public actor GeminiService {
                 "examples": JSONSchema(
                     type: "ARRAY",
                     items: exampleSchema,
-                    description: "Usage examples with translations into \(lang)"
+                    description: "Usage examples in natural context. IMPORTANT: Vary the grammatical forms of the lemma across examples — use different tenses, cases, persons, numbers, etc. Do NOT repeat the same inflected form in multiple examples."
                 )
             ],
             required: ["normalForm", "synonyms", "translatedText", "sourceLanguage", "shortTranslation", "examples"]

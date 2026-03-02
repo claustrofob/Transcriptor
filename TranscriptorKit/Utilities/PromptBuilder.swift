@@ -4,17 +4,27 @@ public enum PromptBuilder {
 
     /// Unified translation prompt — returns JSON with all translation data.
     /// All fields are plain text — no Markdown formatting anywhere.
-    public static func translationPrompt(for settings: TranslationSettings, translationType: TranslationType) -> String {
+    /// Pass `sourceLanguageOverride` to force a specific source language when Gemini's auto-detection was incorrect.
+    public static func translationPrompt(
+        for settings: TranslationSettings,
+        translationType: TranslationType,
+        sourceLanguageOverride: String? = nil
+    ) -> String {
         let lang = settings.targetLanguage
 
+        let base: String
         switch translationType {
         case .word:
-            return wordPrompt(settings: settings, lang: lang)
+            base = wordPrompt(settings: settings, lang: lang)
         case .expression:
-            return expressionPrompt(settings: settings, lang: lang)
+            base = expressionPrompt(settings: settings, lang: lang)
         case .freeText:
-            return freeTextPrompt(lang: lang)
+            base = freeTextPrompt(lang: lang)
         }
+
+        guard let src = sourceLanguageOverride else { return base }
+        let override = "SOURCE LANGUAGE OVERRIDE: The input text is in \(src). Treat it strictly as \(src) and translate from \(src) to \(lang). Disregard any rule that would redirect the translation into English.\n\n"
+        return override + base
     }
 
     // MARK: - Word prompt

@@ -15,10 +15,12 @@ public struct TranslationOutput: Sendable {
 public enum TranslationHelper {
 
     /// Classifies text, translates using appropriate prompt/schema, saves result to SwiftData, and returns UI output.
+    /// Pass `sourceLanguage` (English name, e.g. "Polish") to override Gemini's auto-detection.
     @MainActor
     public static func translateAndSave(
         text: String,
-        modelContext: ModelContext
+        modelContext: ModelContext,
+        sourceLanguage: String? = nil
     ) async throws -> TranslationOutput {
         let settings = SettingsManager.shared.settings
 
@@ -27,7 +29,8 @@ public enum TranslationHelper {
         let meta = try await GeminiService.shared.translateFull(
             text: text,
             settings: settings,
-            translationType: classification
+            translationType: classification,
+            sourceLanguage: sourceLanguage
         )
 
         let synonymsValue = meta.synonyms?.isEmpty == true ? nil : meta.synonyms
