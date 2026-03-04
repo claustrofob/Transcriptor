@@ -47,6 +47,14 @@ public final class LanguageFrequencyStore: @unchecked Sendable {
         self.defaults = UserDefaults(suiteName: AppConstants.appGroupID) ?? .standard
     }
 
+    /// Initializer for testing — injects a custom UserDefaults instance.
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+    }
+
+    /// Exposes the underlying UserDefaults for test assertions.
+    var testDefaults: UserDefaults { defaults }
+
     /// Records a usage event for the given ISO language code.
     /// Old entries outside the 30-day window are pruned on each write.
     public func record(code: String) {
