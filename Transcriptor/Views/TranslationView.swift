@@ -22,27 +22,23 @@ struct TranslationView: View {
     var body: some View {
         NavigationStack {
         ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    sourceTextField
-                    translateButton(proxy: proxy)
-                    translationResult
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        translationResult
+                    }
+                    .padding()
+                    .padding(.bottom, 80)
+                    .frame(maxWidth: .infinity, minHeight: 1)
                 }
-                .padding()
+                .scrollDismissesKeyboard(.interactively)
+                .scrollBounceBehavior(.always)
+                .contentMargins(.bottom, 0, for: .scrollIndicators)
+
+                inputBar(proxy: proxy)
             }
-            .scrollDismissesKeyboard(.interactively)
             .onTapGesture {
                 isTextFieldFocused = false
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        clearAll()
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .disabled(sourceText.isEmpty && translatedText.isEmpty)
-                }
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
@@ -58,6 +54,16 @@ struct TranslationView: View {
             } message: {
                 Text(clipboardText.prefix(200) + (clipboardText.count > 200 ? "..." : ""))
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        clearAll()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .disabled(sourceText.isEmpty && translatedText.isEmpty)
+                }
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         }
@@ -65,38 +71,38 @@ struct TranslationView: View {
 
     // MARK: - Subviews
 
-    private var sourceTextField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Original")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
+    private func inputBar(proxy: ScrollViewProxy) -> some View {
+        HStack(alignment: .bottom, spacing: 8) {
             TextField("Enter text to translate...", text: $sourceText, axis: .vertical)
-                .lineLimit(1...)
-                .padding(12)
-                .background(.fill.tertiary)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .lineLimit(1...5)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 22))
                 .focused($isTextFieldFocused)
-        }
-    }
 
-    private func translateButton(proxy: ScrollViewProxy) -> some View {
-        Button {
-            isTextFieldFocused = false
-            Task { await translate(scrollProxy: proxy) }
-        } label: {
-            HStack {
-                if isTranslating {
-                    ProgressView()
-                        .tint(.white)
+            Button {
+                Task { await translate(scrollProxy: proxy) }
+            } label: {
+                Group {
+                    if isTranslating {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Image(systemName: "arrow.up")
+                            .fontWeight(.semibold)
+                    }
                 }
-                Text(isTranslating ? "Translating..." : "Translate")
+                .frame(width: 20, height: 20)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .frame(width: 40, height: 40)
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.circle)
+            .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating)
         }
-        .buttonStyle(.borderedProminent)
-        .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating)
+        .padding(.horizontal)
+        .padding(.bottom, 16)
+        .padding(.top, 8)
     }
 
     @ViewBuilder
@@ -104,8 +110,6 @@ struct TranslationView: View {
         if let error {
             ErrorLabel(error)
         } else if !translatedText.isEmpty {
-            Divider()
-
             VStack(alignment: .leading, spacing: 8) {
                 Text("Translation")
                     .font(.caption)
@@ -130,8 +134,6 @@ struct TranslationView: View {
                 )
             }
             .id("translation")
-
-            CopyTranslationButton(translatedText, label: "Copy Translation", fullWidth: true)
         }
     }
 
@@ -153,6 +155,7 @@ struct TranslationView: View {
         guard !text.isEmpty else { return }
 
         isTranslating = true
+        isTextFieldFocused = false
         clearAll()
         sourceText = text
 
