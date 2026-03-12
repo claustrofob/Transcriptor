@@ -71,4 +71,89 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         "Arabic", "Hindi", "Turkish", "Dutch", "Polish",
         "Swedish", "Czech", "Greek", "Hebrew", "Thai"
     ]
+
+    // MARK: - Source Language
+
+    public struct SourceLanguage: Identifiable, Equatable, Sendable {
+        public let name: String  // English name
+        public let code: String  // ISO 639-1 / 639-2
+        public var id: String { code }
+    }
+
+    public static let sourceLanguages: [SourceLanguage] = [
+        SourceLanguage(name: "Afrikaans", code: "af"),
+        SourceLanguage(name: "Albanian", code: "sq"),
+        SourceLanguage(name: "Arabic", code: "ar"),
+        SourceLanguage(name: "Armenian", code: "hy"),
+        SourceLanguage(name: "Azerbaijani", code: "az"),
+        SourceLanguage(name: "Basque", code: "eu"),
+        SourceLanguage(name: "Belarusian", code: "be"),
+        SourceLanguage(name: "Bengali", code: "bn"),
+        SourceLanguage(name: "Bulgarian", code: "bg"),
+        SourceLanguage(name: "Catalan", code: "ca"),
+        SourceLanguage(name: "Chinese", code: "zh"),
+        SourceLanguage(name: "Croatian", code: "hr"),
+        SourceLanguage(name: "Czech", code: "cs"),
+        SourceLanguage(name: "Danish", code: "da"),
+        SourceLanguage(name: "Dutch", code: "nl"),
+        SourceLanguage(name: "English", code: "en"),
+        SourceLanguage(name: "Estonian", code: "et"),
+        SourceLanguage(name: "Finnish", code: "fi"),
+        SourceLanguage(name: "French", code: "fr"),
+        SourceLanguage(name: "Galician", code: "gl"),
+        SourceLanguage(name: "Georgian", code: "ka"),
+        SourceLanguage(name: "German", code: "de"),
+        SourceLanguage(name: "Greek", code: "el"),
+        SourceLanguage(name: "Gujarati", code: "gu"),
+        SourceLanguage(name: "Hebrew", code: "he"),
+        SourceLanguage(name: "Hindi", code: "hi"),
+        SourceLanguage(name: "Hungarian", code: "hu"),
+        SourceLanguage(name: "Icelandic", code: "is"),
+        SourceLanguage(name: "Indonesian", code: "id"),
+        SourceLanguage(name: "Irish", code: "ga"),
+        SourceLanguage(name: "Italian", code: "it"),
+        SourceLanguage(name: "Japanese", code: "ja"),
+        SourceLanguage(name: "Kannada", code: "kn"),
+        SourceLanguage(name: "Kazakh", code: "kk"),
+        SourceLanguage(name: "Korean", code: "ko"),
+        SourceLanguage(name: "Latvian", code: "lv"),
+        SourceLanguage(name: "Lithuanian", code: "lt"),
+        SourceLanguage(name: "Macedonian", code: "mk"),
+        SourceLanguage(name: "Malay", code: "ms"),
+        SourceLanguage(name: "Maltese", code: "mt"),
+        SourceLanguage(name: "Marathi", code: "mr"),
+        SourceLanguage(name: "Norwegian", code: "no"),
+        SourceLanguage(name: "Persian", code: "fa"),
+        SourceLanguage(name: "Polish", code: "pl"),
+        SourceLanguage(name: "Portuguese", code: "pt"),
+        SourceLanguage(name: "Romanian", code: "ro"),
+        SourceLanguage(name: "Russian", code: "ru"),
+        SourceLanguage(name: "Serbian", code: "sr"),
+        SourceLanguage(name: "Slovak", code: "sk"),
+        SourceLanguage(name: "Slovenian", code: "sl"),
+        SourceLanguage(name: "Spanish", code: "es"),
+        SourceLanguage(name: "Swahili", code: "sw"),
+        SourceLanguage(name: "Swedish", code: "sv"),
+        SourceLanguage(name: "Tamil", code: "ta"),
+        SourceLanguage(name: "Telugu", code: "te"),
+        SourceLanguage(name: "Thai", code: "th"),
+        SourceLanguage(name: "Turkish", code: "tr"),
+        SourceLanguage(name: "Ukrainian", code: "uk"),
+        SourceLanguage(name: "Urdu", code: "ur"),
+        SourceLanguage(name: "Uzbek", code: "uz"),
+        SourceLanguage(name: "Vietnamese", code: "vi"),
+        SourceLanguage(name: "Welsh", code: "cy"),
+    ]
+
+    /// Parses Gemini's returned sourceLanguage string (e.g., "Польский (pl)")
+    /// and finds the matching SourceLanguage by ISO code.
+    public static func sourceLanguage(fromGeminiString string: String) -> SourceLanguage? {
+        // Extract the ISO code from the trailing "(xx)" pattern
+        guard let openParen = string.lastIndex(of: "("),
+              let closeParen = string.lastIndex(of: ")"),
+              openParen < closeParen else { return nil }
+        let codeStart = string.index(after: openParen)
+        let code = String(string[codeStart..<closeParen]).trimmingCharacters(in: .whitespaces)
+        return sourceLanguages.first { $0.code == code }
+    }
 }

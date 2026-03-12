@@ -13,6 +13,17 @@ public final class TranslationResult {
     public var model: String
     public var createdAt: Date
     public var examplesData: Data?
+    public var translationType: String?
+
+    /// Typed access to translation type. Old records with nil default to `.word`.
+    public var classifiedType: TranslationType {
+        get {
+            translationType.flatMap { TranslationType(rawValue: $0) } ?? .word
+        }
+        set {
+            translationType = newValue.rawValue
+        }
+    }
 
     /// Computed property to encode/decode examples as JSON.
     public var examples: [TranslationExample] {
@@ -34,7 +45,8 @@ public final class TranslationResult {
         sourceLanguage: String? = nil,
         targetLanguage: String,
         model: String,
-        examples: [TranslationExample] = []
+        examples: [TranslationExample] = [],
+        translationType: TranslationType = .word
     ) {
         self.sourceText = sourceText
         self.translatedText = translatedText
@@ -46,5 +58,6 @@ public final class TranslationResult {
         self.model = model
         self.createdAt = Date()
         self.examplesData = examples.isEmpty ? nil : (try? JSONEncoder().encode(examples))
+        self.translationType = translationType.rawValue
     }
 }

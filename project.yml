@@ -79,6 +79,19 @@ targets:
         keychain-access-groups:
           - $(AppIdentifierPrefix)com.claustrofob.Transcriptor
 
+  TranscriptorKitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - TranscriptorKitTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.claustrofob.TranscriptorKitTests
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: TranscriptorKit
+        embed: false
+
 schemes:
   Transcriptor:
     build:
