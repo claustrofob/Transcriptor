@@ -78,7 +78,10 @@ struct SettingsView: View {
         } header: {
             Text("Provider")
         } footer: {
-            Text(provider.apiKeyHint)
+            Text(LocalizedStringKey(provider.apiKeyHint))
+                .environment(\.openURL, OpenURLAction { url in
+                    .systemAction(url, prefersInApp: true)
+                })
         }
     }
 

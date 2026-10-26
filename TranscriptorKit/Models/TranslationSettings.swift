@@ -64,10 +64,11 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
             }
         }
 
+        /// Markdown: the domain links to the provider's API keys page.
         public var apiKeyHint: String {
             switch self {
-            case .google: "Get your free API key at aistudio.google.com. Stored securely in Keychain."
-            case .anthropic: "Get your API key at platform.claude.com. Stored securely in Keychain."
+            case .google: "Get your free API key at [aistudio.google.com](https://aistudio.google.com/apikey). Stored securely in Keychain."
+            case .anthropic: "Get your API key at [platform.claude.com](https://platform.claude.com/settings/keys). Stored securely in Keychain."
             }
         }
     }
