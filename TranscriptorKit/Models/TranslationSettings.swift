@@ -4,23 +4,72 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
 
     public var targetLanguage: String
     public var detailLevel: DetailLevel
-    public var model: GeminiModel
+    public var provider: Provider
+    public var geminiModel: GeminiModel
+    public var claudeModel: ClaudeModel
 
     private enum CodingKeys: String, CodingKey {
-        case targetLanguage, detailLevel, model
+        case targetLanguage, detailLevel, provider, claudeModel
+        // Stored under the legacy "model" key so settings saved before multi-provider support keep working.
+        case geminiModel = "model"
     }
 
-    public init(targetLanguage: String, detailLevel: DetailLevel, model: GeminiModel) {
+    public init(
+        targetLanguage: String,
+        detailLevel: DetailLevel,
+        provider: Provider = .google,
+        geminiModel: GeminiModel = .gemini25Flash,
+        claudeModel: ClaudeModel = .opus55
+    ) {
         self.targetLanguage = targetLanguage
         self.detailLevel = detailLevel
-        self.model = model
+        self.provider = provider
+        self.geminiModel = geminiModel
+        self.claudeModel = claudeModel
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = TranslationSettings.default
         targetLanguage = try container.decode(String.self, forKey: .targetLanguage)
         detailLevel = try container.decode(DetailLevel.self, forKey: .detailLevel)
-        model = try container.decode(GeminiModel.self, forKey: .model)
+        provider = try container.decodeIfPresent(Provider.self, forKey: .provider) ?? fallback.provider
+        geminiModel = try container.decodeIfPresent(GeminiModel.self, forKey: .geminiModel) ?? fallback.geminiModel
+        claudeModel = try container.decodeIfPresent(ClaudeModel.self, forKey: .claudeModel) ?? fallback.claudeModel
+    }
+
+    /// API model identifier of the active provider.
+    public var modelID: String {
+        switch provider {
+        case .google: geminiModel.rawValue
+        case .anthropic: claudeModel.rawValue
+        }
+    }
+
+    public enum Provider: String, Codable, CaseIterable, Sendable {
+        case google
+        case anthropic
+
+        public var displayName: String {
+            switch self {
+            case .google: "Google"
+            case .anthropic: "Anthropic"
+            }
+        }
+
+        public var apiKeyPlaceholder: String {
+            switch self {
+            case .google: "AIza..."
+            case .anthropic: "sk-ant-..."
+            }
+        }
+
+        public var apiKeyHint: String {
+            switch self {
+            case .google: "Get your free API key at aistudio.google.com. Stored securely in Keychain."
+            case .anthropic: "Get your API key at platform.claude.com. Stored securely in Keychain."
+            }
+        }
     }
 
     public enum DetailLevel: String, Codable, CaseIterable, Sendable {
@@ -59,10 +108,31 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         }
     }
 
+    public enum ClaudeModel: String, Codable, CaseIterable, Sendable {
+        case opus55 = "claude-opus-5-5"
+        case sonnet55 = "claude-sonnet-5-5"
+        case haiku55 = "claude-haiku-5-5"
+
+        public var displayName: String {
+            switch self {
+            case .opus55: "Claude Opus 5.5 (Quality)"
+            case .sonnet55: "Claude Sonnet 5.5"
+            case .haiku55: "Claude Haiku 5.5 (Fast)"
+            }
+        }
+
+        /// Haiku has no server-side refusal fallback.
+        var supportsServerFallback: Bool {
+            self != .haiku55
+        }
+    }
+
     public static let `default` = TranslationSettings(
         targetLanguage: "Russian",
         detailLevel: .standard,
-        model: .gemini25Flash
+        provider: .google,
+        geminiModel: .gemini25Flash,
+        claudeModel: .opus55
     )
 
     public static let supportedLanguages = [

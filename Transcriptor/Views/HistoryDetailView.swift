@@ -29,9 +29,18 @@ struct HistoryDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                Text(result.createdAt, format: .dateTime)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                HStack {
+                    Text(result.createdAt, format: .dateTime)
+                    Spacer()
+                    if let duration = result.responseDuration {
+                        Label(
+                            Duration.seconds(duration).formatted(.units(allowed: [.seconds], fractionalPart: .show(length: 1))),
+                            systemImage: "timer"
+                        )
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.tertiary)
             }
             .padding()
         }
@@ -42,5 +51,20 @@ struct HistoryDetailView: View {
                 CopyTranslationButton(result.translatedText)
             }
         }
+    }
+}
+
+#Preview {
+    NavigationStack {
+        HistoryDetailView(result: TranslationResult(
+            sourceText: "podekscytowany",
+            translatedText: "прилагательное (м.р.)\nвзволнованный, возбуждённый",
+            normalForm: "podekscytowany",
+            shortTranslation: "взволнованный, возбуждённый",
+            sourceLanguage: "Польский (pl)",
+            targetLanguage: "Russian",
+            model: "claude-opus-5-5",
+            responseDuration: 2.37
+        ))
     }
 }

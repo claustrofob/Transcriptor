@@ -115,8 +115,7 @@ struct PromptBuilderTests {
     ) -> String {
         let settings = TranslationSettings(
             targetLanguage: language,
-            detailLevel: detailLevel,
-            model: .gemini25Flash
+            detailLevel: detailLevel
         )
         return PromptBuilder.translationPrompt(
             for: settings,

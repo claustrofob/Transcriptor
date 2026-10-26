@@ -19,7 +19,7 @@ public actor GeminiService {
         sourceLanguage: String? = nil
     ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
-        let urlString = "\(AppConstants.geminiBaseURL)/\(settings.model.rawValue):generateContent?key=\(apiKey)"
+        let urlString = "\(AppConstants.geminiBaseURL)/\(settings.geminiModel.rawValue):generateContent?key=\(apiKey)"
 
         guard let url = URL(string: urlString) else {
             throw TranslationError.invalidResponse
@@ -29,19 +29,9 @@ public actor GeminiService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 60
 
-        let lang = settings.targetLanguage
-        let schema: JSONSchema
-
-        switch translationType {
-        case .word, .expression:
-            schema = buildFullSchema(lang: lang)
-        case .freeText:
-            schema = buildFreeTextSchema(lang: lang)
-        }
-
         let config = GenerationConfig(
             responseMimeType: "application/json",
-            responseSchema: schema
+            responseSchema: TranslationSchema.schema(for: translationType, lang: settings.targetLanguage)
         )
 
         let body = GeminiRequest(
@@ -63,76 +53,11 @@ public actor GeminiService {
         return try JSONDecoder().decode(TranslationMeta.self, from: jsonData)
     }
 
-    // MARK: - JSON Schemas
-
-    private func buildFullSchema(lang: String) -> JSONSchema {
-        let exampleSchema = JSONSchema(
-            type: "OBJECT",
-            properties: [
-                "original": JSONSchema(
-                    type: "STRING",
-                    description: "A natural sentence in the source language using an inflected or conjugated form of the word as it appears in real speech — not necessarily the lemma form itself."
-                ),
-                "translation": JSONSchema(type: "STRING", description: "Same sentence translated into \(lang)")
-            ],
-            required: ["original", "translation"]
-        )
-
-        return JSONSchema(
-            type: "OBJECT",
-            properties: [
-                "normalForm": JSONSchema(
-                    type: "STRING",
-                    description: "The lemma (lexeme) of the input word — the canonical base form as found in a dictionary. MUST be in the SOURCE language, NEVER in \(lang). CRITICAL: Always return the lemma even when the user typed an inflected form. Rules: noun → nominative singular; verb → infinitive; adjective → nominative singular masculine; pronoun → nominative. Examples: 'biegałem'→'biegać', 'dogs'→'dog', 'красивого'→'красивый', 'gelaufen'→'laufen'."
-                ),
-                "synonyms": JSONSchema(
-                    type: "STRING",
-                    description: "Synonyms in the SOURCE language (same language as input), NOT in \(lang). Comma-separated. Empty string if none."
-                ),
-                "translatedText": JSONSchema(
-                    type: "STRING",
-                    description: "Full translation and explanation. MUST be written entirely in \(lang)."
-                ),
-                "sourceLanguage": JSONSchema(
-                    type: "STRING",
-                    description: "Name of the source language written in \(lang) with ISO 639-1 code in parentheses."
-                ),
-                "shortTranslation": JSONSchema(
-                    type: "STRING",
-                    description: "Brief translation variants in \(lang), comma-separated."
-                ),
-                "examples": JSONSchema(
-                    type: "ARRAY",
-                    items: exampleSchema,
-                    description: "Usage examples in natural context. IMPORTANT: Vary the grammatical forms of the lemma across examples — use different tenses, cases, persons, numbers, etc. Do NOT repeat the same inflected form in multiple examples."
-                )
-            ],
-            required: ["normalForm", "synonyms", "translatedText", "sourceLanguage", "shortTranslation", "examples"]
-        )
-    }
-
-    private func buildFreeTextSchema(lang: String) -> JSONSchema {
-        JSONSchema(
-            type: "OBJECT",
-            properties: [
-                "translatedText": JSONSchema(
-                    type: "STRING",
-                    description: "Full translation of the input text. MUST be written entirely in \(lang)."
-                ),
-                "sourceLanguage": JSONSchema(
-                    type: "STRING",
-                    description: "Name of the source language written in \(lang) with ISO 639-1 code in parentheses."
-                )
-            ],
-            required: ["translatedText", "sourceLanguage"]
-        )
-    }
-
     // MARK: - Private helpers
 
     private func requireAPIKey() throws -> String {
-        guard let key = KeychainService.shared.loadAPIKey(), !key.isEmpty else {
-            throw TranslationError.noAPIKey
+        guard let key = KeychainService.shared.loadAPIKey(for: .google), !key.isEmpty else {
+            throw TranslationError.noAPIKey(provider: .google)
         }
         return key
     }
@@ -160,18 +85,22 @@ public actor GeminiService {
 // MARK: - Errors
 
 public enum TranslationError: LocalizedError {
-    case noAPIKey
+    case noAPIKey(provider: TranslationSettings.Provider)
     case emptyResponse
+    case refused(explanation: String?)
     case invalidResponse
     case networkError(Error)
     case apiError(statusCode: Int, message: String)
 
     public var errorDescription: String? {
         switch self {
-        case .noAPIKey:
-            "API key not configured. Please set your Google AI API key in Settings."
+        case .noAPIKey(let provider):
+            "API key not configured. Please set your \(provider.displayName) API key in Settings."
         case .emptyResponse:
             "Received an empty response from the server."
+        case .refused(let explanation):
+            explanation.map { "The model declined to translate this text: \($0)" }
+                ?? "The model declined to translate this text."
         case .invalidResponse:
             "Invalid response from the server."
         case .networkError(let error):
@@ -179,7 +108,7 @@ public enum TranslationError: LocalizedError {
         case .apiError(let statusCode, let message):
             switch statusCode {
             case 400: "Bad request: \(message)"
-            case 403: "Invalid API key. Please check your key in Settings."
+            case 401, 403: "Invalid API key. Please check your key in Settings."
             case 429: "Rate limit exceeded: \(message)"
             case 500...599: "Server error (\(statusCode)). Please try again later."
             default: "API error (\(statusCode)): \(message)"

@@ -68,19 +68,36 @@ public struct JSONSchema: Encodable, Sendable {
     public let items: JSONSchemaBox?
     public let required: [String]?
     public let description: String?
+    public let additionalProperties: Bool?
 
     public init(
         type: String,
         properties: [String: JSONSchema]? = nil,
         items: JSONSchema? = nil,
         required: [String]? = nil,
-        description: String? = nil
+        description: String? = nil,
+        additionalProperties: Bool? = nil
     ) {
         self.type = type
         self.properties = properties
         self.items = items.map { JSONSchemaBox($0) }
         self.required = required
         self.description = description
+        self.additionalProperties = additionalProperties
+    }
+
+    /// Converts a Gemini-style schema (uppercase types) to standard JSON Schema:
+    /// lowercase types and `additionalProperties: false` on every object, as Claude structured outputs require.
+    public func standardized() -> JSONSchema {
+        let lowercasedType = type.lowercased()
+        return JSONSchema(
+            type: lowercasedType,
+            properties: properties?.mapValues { $0.standardized() },
+            items: items?.value.standardized(),
+            required: required,
+            description: description,
+            additionalProperties: lowercasedType == "object" ? false : additionalProperties
+        )
     }
 }
 

@@ -2,7 +2,7 @@
 
 ## О проекте
 
-iOS-приложение для перевода текста через Google Gemini API. Пользователь настраивает API-ключ и параметры перевода один раз, затем может переводить текст из любого приложения через Share-меню (Action Extension) или через буфер обмена.
+iOS-приложение для перевода текста через Google Gemini API или Anthropic Claude API. Пользователь настраивает API-ключ и параметры перевода один раз, затем может переводить текст из любого приложения через Share-меню (Action Extension) или через буфер обмена.
 
 ## Архитектура
 
@@ -18,7 +18,7 @@ iOS-приложение для перевода текста через Google 
 - iOS 26+, universal (iPhone + iPad)
 - SwiftUI, Swift Concurrency (async/await, actors)
 - SwiftData (история переводов)
-- URLSession + Gemini REST API (JSON mode)
+- URLSession + Gemini REST API (JSON mode) / Claude Messages API (structured outputs)
 - Ноль сторонних зависимостей
 
 ## Ключевые идентификаторы
@@ -57,10 +57,9 @@ iOS-приложение для перевода текста через Google 
 - Вся остальная информация открывается по тапу
 
 **Settings:**
-- Google AI API Key
-- Target Language
-- Model
-- Detail Level
+- Provider: Google или Anthropic (активен один)
+- Для активного провайдера: API Key и Model. У каждого провайдера свои ключ (Keychain) и модель, при переключении они не сбрасываются
+- Общие: Target Language, Detail Level
 - About
 
 ## Перевод (единый JSON-запрос)
@@ -68,7 +67,9 @@ iOS-приложение для перевода текста через Google 
 Один запрос к Gemini API через `generateContent` с `response_mime_type: "application/json"` + `response_schema`.
 Возвращает все данные сразу: перевод, метаданные, примеры.
 
-**Метод:** `GeminiService.translateFull(text:settings:) -> TranslationMeta`
+**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. Выбор провайдера — в `TranslationHelper` по `settings.provider`.
+
+Схема ответа общая — `TranslationSchema` (в диалекте Gemini); для Claude она конвертируется через `JSONSchema.standardized()` (lowercase-типы + `additionalProperties: false`).
 
 **JSON Schema ответа:**
 ```json

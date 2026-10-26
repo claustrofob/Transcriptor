@@ -9,13 +9,13 @@ public final class KeychainService: Sendable {
 
     // MARK: - Save
 
-    public func saveAPIKey(_ key: String) throws {
+    public func saveAPIKey(_ key: String, for provider: TranslationSettings.Provider) throws {
         let data = Data(key.utf8)
 
         // Try to update first
         let updateQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: AppConstants.keychainServiceName,
+            kSecAttrService as String: serviceName(for: provider),
             kSecAttrAccessGroup as String: AppConstants.keychainAccessGroup,
         ]
 
@@ -42,10 +42,10 @@ public final class KeychainService: Sendable {
 
     // MARK: - Load
 
-    public func loadAPIKey() -> String? {
+    public func loadAPIKey(for provider: TranslationSettings.Provider) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: AppConstants.keychainServiceName,
+            kSecAttrService as String: serviceName(for: provider),
             kSecAttrAccessGroup as String: AppConstants.keychainAccessGroup,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
@@ -63,16 +63,26 @@ public final class KeychainService: Sendable {
 
     // MARK: - Delete
 
-    public func deleteAPIKey() throws {
+    public func deleteAPIKey(for provider: TranslationSettings.Provider) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: AppConstants.keychainServiceName,
+            kSecAttrService as String: serviceName(for: provider),
             kSecAttrAccessGroup as String: AppConstants.keychainAccessGroup,
         ]
 
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError.unableToDelete(status: status)
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Google keeps the original service name so keys saved before multi-provider support are still found.
+    private func serviceName(for provider: TranslationSettings.Provider) -> String {
+        switch provider {
+        case .google: AppConstants.keychainServiceName
+        case .anthropic: "\(AppConstants.keychainServiceName).anthropic"
         }
     }
 }

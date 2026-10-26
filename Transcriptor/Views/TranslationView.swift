@@ -14,6 +14,7 @@ struct TranslationView: View {
     @State private var normalForm: String?
     @State private var synonyms: String?
     @State private var examples: [TranslationExample] = []
+    @State private var translationTask: Task<Void, Never>?
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
@@ -48,21 +49,11 @@ struct TranslationView: View {
             .alert("Translate from Clipboard?", isPresented: $showClipboardAlert) {
                 Button("Translate") {
                     sourceText = clipboardText
-                    Task { await translate(scrollProxy: proxy) }
+                    startTranslation { await translate(scrollProxy: proxy) }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(clipboardText.prefix(200) + (clipboardText.count > 200 ? "..." : ""))
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        clearAll()
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .disabled(sourceText.isEmpty && translatedText.isEmpty)
-                }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -73,16 +64,29 @@ struct TranslationView: View {
 
     private func inputBar(proxy: ScrollViewProxy) -> some View {
         HStack(alignment: .bottom, spacing: 8) {
-            TextField("Enter text to translate...", text: $sourceText, axis: .vertical)
-                .lineLimit(1...5)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 22))
-                .focused($isTextFieldFocused)
+            HStack(alignment: .bottom, spacing: 8) {
+                TextField("Enter text to translate...", text: $sourceText, axis: .vertical)
+                    .lineLimit(1...5)
+                    .focused($isTextFieldFocused)
+
+                if !sourceText.isEmpty {
+                    Button {
+                        cancelAndClear()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear")
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
 
             Button {
-                Task { await translate(scrollProxy: proxy) }
+                startTranslation { await translate(scrollProxy: proxy) }
             } label: {
                 Group {
                     if isTranslating {
@@ -90,12 +94,13 @@ struct TranslationView: View {
                             .tint(.white)
                     } else {
                         Image(systemName: "arrow.up")
+                            .font(.title3)
                             .fontWeight(.semibold)
                     }
                 }
-                .frame(width: 20, height: 20)
+                .frame(width: 24, height: 24)
             }
-            .frame(width: 40, height: 40)
+            .frame(width: 48, height: 48)
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.circle)
             .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating)
@@ -122,7 +127,7 @@ struct TranslationView: View {
                 ) { lang in
                     LanguageFrequencyStore.shared.record(code: lang.code)
                     selectedSourceLanguage = lang
-                    Task { await retranslate(with: lang) }
+                    startTranslation { await retranslate(with: lang) }
                 }
 
                 TranslationContentView(
@@ -138,6 +143,18 @@ struct TranslationView: View {
     }
 
     // MARK: - Actions
+
+    private func startTranslation(_ operation: @escaping @MainActor () async -> Void) {
+        translationTask?.cancel()
+        translationTask = Task { await operation() }
+    }
+
+    private func cancelAndClear() {
+        translationTask?.cancel()
+        translationTask = nil
+        isTranslating = false
+        clearAll()
+    }
 
     private func clearAll() {
         sourceText = ""
@@ -164,6 +181,7 @@ struct TranslationView: View {
                 text: text,
                 modelContext: modelContext
             )
+            guard !Task.isCancelled else { return }
 
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
@@ -179,6 +197,7 @@ struct TranslationView: View {
                 proxy.scrollTo("translation", anchor: .top)
             }
         } catch {
+            guard !Task.isCancelled else { return }
             self.error = error.localizedDescription
         }
 
@@ -202,12 +221,14 @@ struct TranslationView: View {
                 modelContext: modelContext,
                 sourceLanguage: lang.name
             )
+            guard !Task.isCancelled else { return }
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
             normalForm = output.normalForm
             synonyms = output.synonyms
             examples = output.examples
         } catch {
+            guard !Task.isCancelled else { return }
             self.error = error.localizedDescription
         }
 

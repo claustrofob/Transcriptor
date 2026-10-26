@@ -25,13 +25,29 @@ public enum TranslationHelper {
         let settings = SettingsManager.shared.settings
 
         let classification = await TextClassifier.classify(text)
+        try Task.checkCancellation()
 
-        let meta = try await GeminiService.shared.translateFull(
-            text: text,
-            settings: settings,
-            translationType: classification,
-            sourceLanguage: sourceLanguage
-        )
+        let clock = ContinuousClock()
+        let start = clock.now
+        let meta = switch settings.provider {
+        case .google:
+            try await GeminiService.shared.translateFull(
+                text: text,
+                settings: settings,
+                translationType: classification,
+                sourceLanguage: sourceLanguage
+            )
+        case .anthropic:
+            try await ClaudeService.shared.translateFull(
+                text: text,
+                settings: settings,
+                translationType: classification,
+                sourceLanguage: sourceLanguage
+            )
+        }
+        let elapsed = clock.now - start
+
+        try Task.checkCancellation()
 
         let synonymsValue = meta.synonyms?.isEmpty == true ? nil : meta.synonyms
 
@@ -43,9 +59,10 @@ public enum TranslationHelper {
             shortTranslation: meta.shortTranslation,
             sourceLanguage: meta.sourceLanguage,
             targetLanguage: settings.targetLanguage,
-            model: settings.model.rawValue,
+            model: settings.modelID,
             examples: meta.examples ?? [],
-            translationType: classification
+            translationType: classification,
+            responseDuration: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
         )
         modelContext.insert(result)
         try? modelContext.save()

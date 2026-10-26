@@ -5,6 +5,17 @@ import Foundation
 @Suite("TranslationResult")
 struct TranslationResultTests {
 
+    // MARK: - responseDuration
+
+    @Test func responseDurationDefaultsToNil() {
+        #expect(makeResult().responseDuration == nil)
+    }
+
+    @Test func responseDurationIsStored() {
+        let result = TranslationResult(sourceText: "a", translatedText: "b", targetLanguage: "Russian", model: "m", responseDuration: 1.25)
+        #expect(result.responseDuration == 1.25)
+    }
+
     // MARK: - examples encode / decode
 
     @Test func examplesRoundTrip() {

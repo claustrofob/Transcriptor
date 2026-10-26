@@ -103,3 +103,11 @@ schemes:
       config: Release
     archive:
       config: Release
+  TranscriptorKit:
+    build:
+      targets:
+        TranscriptorKit: all
+    test:
+      config: Debug
+      targets:
+        - TranscriptorKitTests
