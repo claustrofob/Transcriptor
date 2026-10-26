@@ -7,3 +7,6 @@ Thumbs.db
 
 .env
 .mcp.json
+
+# Xcode per-user state
+xcuserdata/
