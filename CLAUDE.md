@@ -103,7 +103,7 @@ iOS-приложение для перевода текста через Google 
 
 ## Shared UI
 
-`TranslationSession` (TranscriptorKit, `@Observable`) — состояние и логика перевода на экране: новый запрос отменяет текущий, отменённый не сохраняется в историю; смена source/target языка перезапускает перевод. Используется в TranslationView и ActionView.
+`TranslationSession` (TranscriptorKit, `@Observable`) — состояние и логика перевода на экране: новый запрос отменяет текущий, отменённый не сохраняется в историю; смена source/target языка перезапускает перевод. Повторный запрос с теми же параметрами (текст, source, target, Detail Level, провайдер, модель) не отправляется, если результат уже показан или запрос в пути; после ошибки повтор разрешён. Используется в TranslationView и ActionView.
 
 `TranslationInputBox(text:isFocused:onSubmit:)` (TranscriptorKit) — блок ввода: поле, очистка, Detail Level, отправка. Используется в TranslationView и ActionView над `TranslationResultView`.
 

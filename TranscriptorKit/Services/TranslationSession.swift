@@ -25,6 +25,19 @@ public final class TranslationSession {
     public private(set) var isTranslating = false
 
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// Parameters of the latest request, in flight or finished; used to skip repeating it.
+    @ObservationIgnored private var lastParameters: RequestParameters?
+
+    /// Everything that affects a translation's result.
+    struct RequestParameters: Equatable {
+        var text: String
+        /// Detected or user-chosen source language; `nil` means auto-detect.
+        var sourceLanguageCode: String?
+        var targetLanguage: String
+        var detailLevel: TranslationSettings.DetailLevel
+        var provider: TranslationSettings.Provider
+        var modelID: String
+    }
 
     public init() {}
 
@@ -33,10 +46,13 @@ public final class TranslationSession {
         isTranslating && selectedSourceLanguage == nil && sourceLanguage == nil
     }
 
-    /// Starts translating new text with auto-detected source language.
+    /// Starts translating text. New text is auto-detected; the same text keeps its source language.
+    /// Does nothing if the result for the same text and settings is already shown or in flight.
     public func translate(_ text: String, modelContext: ModelContext) {
+        if text != sourceText {
+            selectedSourceLanguage = nil
+        }
         sourceText = text
-        selectedSourceLanguage = nil
         start(modelContext: modelContext)
     }
 
@@ -56,9 +72,24 @@ public final class TranslationSession {
     private func start(modelContext: ModelContext) {
         guard let sourceText else { return }
 
+        let settings = SettingsManager.shared.settings
+        let parameters = RequestParameters(
+            text: sourceText,
+            sourceLanguageCode: selectedSourceLanguage?.code,
+            targetLanguage: settings.targetLanguage,
+            detailLevel: settings.detailLevel,
+            provider: settings.provider,
+            modelID: settings.modelID
+        )
+        // A failed request may be retried with the same parameters (e.g. after adding an API key).
+        if parameters == lastParameters, error == nil {
+            return
+        }
+        lastParameters = parameters
+
         task?.cancel()
         resetResult()
-        targetLanguage = SettingsManager.shared.settings.targetLanguage
+        targetLanguage = settings.targetLanguage
         isTranslating = true
 
         let override = selectedSourceLanguage
@@ -95,6 +126,8 @@ public final class TranslationSession {
                 if let code = selectedSourceLanguage?.code {
                     LanguageFrequencyStore.shared.record(code: code)
                 }
+                // The detected language becomes part of the request: picking it again changes nothing.
+                lastParameters?.sourceLanguageCode = selectedSourceLanguage?.code
             }
             normalForm = output.normalForm
             synonyms = output.synonyms
