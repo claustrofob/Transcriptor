@@ -4,6 +4,8 @@ import TranscriptorKit
 
 struct TranslationView: View {
     @State private var sourceText = ""
+    /// Text of the last submitted request, shown at the top of the screen.
+    @State private var submittedText: String?
     @State private var translatedText = ""
     @State private var isTranslating = false
     @State private var error: String?
@@ -59,7 +61,7 @@ struct TranslationView: View {
             .alert("Translate from Clipboard?", isPresented: $showClipboardAlert) {
                 Button("Translate") {
                     sourceText = clipboardText
-                    startTranslation { await translate(scrollProxy: proxy) }
+                    submit(scrollProxy: proxy)
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -104,7 +106,7 @@ struct TranslationView: View {
 
                 if !sourceText.isEmpty {
                     Button {
-                        cancelAndClear()
+                        sourceText = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
@@ -124,20 +126,13 @@ struct TranslationView: View {
                 Spacer(minLength: 0)
 
                 Button {
-                    startTranslation { await translate(scrollProxy: proxy) }
+                    submit(scrollProxy: proxy)
                 } label: {
-                    Group {
-                        if isTranslating {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "arrow.up")
-                                .fontWeight(.semibold)
-                        }
-                    }
-                    .foregroundStyle(isSendDisabled ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.white))
-                    .frame(width: 36, height: 36)
-                    .background(isSendDisabled && !isTranslating ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.tint), in: .circle)
+                    Image(systemName: "arrow.up")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(isSendDisabled ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.white))
+                        .frame(width: 36, height: 36)
+                        .background(isSendDisabled ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.tint), in: .circle)
                 }
                 .buttonStyle(.plain)
                 .disabled(isSendDisabled)
@@ -151,8 +146,9 @@ struct TranslationView: View {
         .padding(.top, 8)
     }
 
+    // Sending while a translation is in flight is allowed: it cancels the previous request.
     private var isSendDisabled: Bool {
-        sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating
+        sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var targetLanguageMenu: some View {
@@ -185,118 +181,115 @@ struct TranslationView: View {
 
     @ViewBuilder
     private var translationResult: some View {
-        if let error {
-            ErrorLabel(error)
-        } else if !translatedText.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Translation")
+        if let submittedText {
+            GroupBox {
+                Text(submittedText)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } label: {
+                Label("Original", systemImage: "text.quote")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                SourceLanguagePicker(
-                    selected: selectedSourceLanguage,
-                    fallbackLabel: sourceLanguage,
-                    isDisabled: isTranslating
-                ) { lang in
-                    LanguageFrequencyStore.shared.record(code: lang.code)
-                    selectedSourceLanguage = lang
-                    startTranslation { await retranslate(with: lang) }
-                }
-
-                TranslationContentView(
-                    normalForm: normalForm,
-                    synonyms: synonyms,
-                    translatedText: translatedText,
-                    sourceLanguage: nil,
-                    examples: examples
-                )
             }
-            .id("translation")
+            .id("original")
+
+            GroupBox {
+                if let error {
+                    ErrorLabel(error)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if isTranslating && translatedText.isEmpty {
+                    HStack {
+                        ProgressView()
+                        Text("Translating...")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 8)
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SourceLanguagePicker(
+                            selected: selectedSourceLanguage,
+                            fallbackLabel: sourceLanguage,
+                            isDisabled: isTranslating
+                        ) { lang in
+                            LanguageFrequencyStore.shared.record(code: lang.code)
+                            selectedSourceLanguage = lang
+                            retranslate(with: lang)
+                        }
+
+                        TranslationContentView(
+                            normalForm: normalForm,
+                            synonyms: synonyms,
+                            translatedText: translatedText,
+                            sourceLanguage: nil,
+                            examples: examples
+                        )
+                    }
+                }
+            } label: {
+                Label("Translation", systemImage: "text.bubble")
+                    .font(.caption)
+            }
         }
     }
 
     // MARK: - Actions
 
-    private func startTranslation(_ operation: @escaping @MainActor () async -> Void) {
-        translationTask?.cancel()
-        translationTask = Task { await operation() }
-    }
+    /// Moves the input text to the top of the screen and starts translating it,
+    /// cancelling any request still in flight (a cancelled request is not saved to history).
+    private func submit(scrollProxy proxy: ScrollViewProxy) {
+        let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
 
-    private func cancelAndClear() {
-        translationTask?.cancel()
-        translationTask = nil
-        isTranslating = false
-        clearAll()
-    }
-
-    private func clearAll() {
         sourceText = ""
+        isTextFieldFocused = false
+        submittedText = text
+        selectedSourceLanguage = nil
+        startTranslation(text: text, sourceLanguage: nil)
+
+        withAnimation {
+            proxy.scrollTo("original", anchor: .top)
+        }
+    }
+
+    private func retranslate(with lang: TranslationSettings.SourceLanguage) {
+        guard let submittedText else { return }
+        startTranslation(text: submittedText, sourceLanguage: lang)
+    }
+
+    private func startTranslation(text: String, sourceLanguage lang: TranslationSettings.SourceLanguage?) {
+        translationTask?.cancel()
+        resetResult()
+        isTranslating = true
+        translationTask = Task { await translate(text: text, sourceLanguage: lang) }
+    }
+
+    private func resetResult() {
         translatedText = ""
         sourceLanguage = nil
-        selectedSourceLanguage = nil
         normalForm = nil
         synonyms = nil
         examples = []
         error = nil
     }
 
-    private func translate(scrollProxy proxy: ScrollViewProxy) async {
-        let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        isTranslating = true
-        isTextFieldFocused = false
-        clearAll()
-        sourceText = text
-
-        do {
-            let output = try await TranslationHelper.translateAndSave(
-                text: text,
-                modelContext: modelContext
-            )
-            guard !Task.isCancelled else { return }
-
-            translatedText = output.translatedText
-            sourceLanguage = output.sourceLanguage
-            selectedSourceLanguage = TranslationSettings.sourceLanguage(fromGeminiString: output.sourceLanguage)
-            if let code = selectedSourceLanguage?.code {
-                LanguageFrequencyStore.shared.record(code: code)
-            }
-            normalForm = output.normalForm
-            synonyms = output.synonyms
-            examples = output.examples
-
-            withAnimation {
-                proxy.scrollTo("translation", anchor: .top)
-            }
-        } catch {
-            guard !Task.isCancelled else { return }
-            self.error = error.localizedDescription
-        }
-
-        isTranslating = false
-    }
-
-    private func retranslate(with lang: TranslationSettings.SourceLanguage) async {
-        let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        isTranslating = true
-        translatedText = ""
-        normalForm = nil
-        synonyms = nil
-        examples = []
-        error = nil
-
+    /// Pass `lang` to override auto-detection; otherwise the detected language becomes the picker selection.
+    private func translate(text: String, sourceLanguage lang: TranslationSettings.SourceLanguage?) async {
         do {
             let output = try await TranslationHelper.translateAndSave(
                 text: text,
                 modelContext: modelContext,
-                sourceLanguage: lang.name
+                sourceLanguage: lang?.name
             )
             guard !Task.isCancelled else { return }
+
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
+            if lang == nil {
+                selectedSourceLanguage = TranslationSettings.sourceLanguage(fromGeminiString: output.sourceLanguage)
+                if let code = selectedSourceLanguage?.code {
+                    LanguageFrequencyStore.shared.record(code: code)
+                }
+            }
             normalForm = output.normalForm
             synonyms = output.synonyms
             examples = output.examples
@@ -315,7 +308,9 @@ struct TranslationView: View {
               !showHistory, !showSettings,
               UIPasteboard.general.hasStrings,
               let text = UIPasteboard.general.string,
-              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              // The input is emptied on submit, so don't re-offer text that is already translated.
+              text.trimmingCharacters(in: .whitespacesAndNewlines) != submittedText
         else { return }
 
         clipboardText = text
