@@ -44,6 +44,13 @@ public enum TranslationHelper {
                 translationType: classification,
                 sourceLanguage: sourceLanguage
             )
+        case .apple:
+            try await OnDeviceTranslationService.translateFull(
+                text: text,
+                settings: settings,
+                translationType: classification,
+                sourceLanguage: sourceLanguage
+            )
         }
         let elapsed = clock.now - start
 

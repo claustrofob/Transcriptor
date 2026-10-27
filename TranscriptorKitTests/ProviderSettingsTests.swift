@@ -46,6 +46,22 @@ struct ProviderSettingsTests {
         #expect(settings.modelID == "claude-opus-5-5")
     }
 
+    // MARK: - On-device provider
+
+    @Test func onDeviceProviderRoundTrips() throws {
+        let original = TranslationSettings(targetLanguage: "Russian", provider: .apple)
+        let decoded = try JSONDecoder().decode(TranslationSettings.self, from: JSONEncoder().encode(original))
+        #expect(decoded.provider == .apple)
+    }
+
+    @Test func onDeviceProviderNeedsNoKeyAndHasFixedModelID() {
+        let settings = TranslationSettings(targetLanguage: "Russian", provider: .apple)
+        #expect(!settings.provider.requiresAPIKey)
+        #expect(TranslationSettings.Provider.google.requiresAPIKey)
+        #expect(TranslationSettings.Provider.anthropic.requiresAPIKey)
+        #expect(settings.modelID == "apple-on-device")
+    }
+
     // MARK: - Fallbacks
 
     @Test func serverFallbackSkippedOnlyForHaiku() {

@@ -2,7 +2,7 @@
 
 ## О проекте
 
-iOS-приложение для перевода текста через Google Gemini API или Anthropic Claude API. Пользователь настраивает API-ключ и параметры перевода один раз, затем может переводить текст из любого приложения через Share-меню (Action Extension) или через буфер обмена.
+iOS-приложение для перевода текста через Google Gemini API, Anthropic Claude API или on-device модель Apple Intelligence (Foundation Models). Пользователь настраивает API-ключ и параметры перевода один раз, затем может переводить текст из любого приложения через Share-меню (Action Extension) или через буфер обмена.
 
 ## Архитектура
 
@@ -56,7 +56,7 @@ iOS-приложение для перевода текста через Google 
 - Вся остальная информация открывается по тапу
 
 **Settings:**
-- Provider: Google или Anthropic (активен один)
+- Provider: Google, Anthropic или On-device (активен один). On-device — модель Apple Intelligence через Foundation Models, без ключа; вместо ключа и модели показывается статус доступности
 - Для активного провайдера: API Key и Model. У каждого провайдера свои ключ (Keychain) и модель, при переключении они не сбрасываются
 - About
 
@@ -65,7 +65,7 @@ iOS-приложение для перевода текста через Google 
 Один запрос к Gemini API через `generateContent` с `response_mime_type: "application/json"` + `response_schema`.
 Возвращает все данные сразу: перевод, метаданные, примеры.
 
-**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. Выбор провайдера — в `TranslationHelper` по `settings.provider`.
+**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. `OnDeviceTranslationService.translateFull(...)` — on-device: те же промпты, вместо JSON-схемы guided generation (`@Generable`). Выбор провайдера — в `TranslationHelper` по `settings.provider`.
 
 Схема ответа общая — `TranslationSchema` (в диалекте Gemini); для Claude она конвертируется через `JSONSchema.standardized()` (lowercase-типы + `additionalProperties: false`).
 

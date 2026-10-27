@@ -88,6 +88,7 @@ public enum TranslationError: LocalizedError {
     case noAPIKey(provider: TranslationSettings.Provider)
     case emptyResponse
     case refused(explanation: String?)
+    case onDeviceUnavailable(String)
     case invalidResponse
     case networkError(Error)
     case apiError(statusCode: Int, message: String)
@@ -98,6 +99,8 @@ public enum TranslationError: LocalizedError {
             "API key not configured. Please set your \(provider.displayName) API key in Settings."
         case .emptyResponse:
             "Received an empty response from the server."
+        case .onDeviceUnavailable(let reason):
+            reason
         case .refused(let explanation):
             explanation.map { "The model declined to translate this text: \($0)" }
                 ?? "The model declined to translate this text."

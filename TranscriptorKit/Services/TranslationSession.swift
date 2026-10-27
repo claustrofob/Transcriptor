@@ -10,8 +10,9 @@ public final class TranslationSession {
 
     /// Text being translated; `nil` until the first request.
     public private(set) var sourceText: String?
-    /// Target language the current result was requested in.
-    public private(set) var targetLanguage: String?
+    /// Observable copy of the target language setting (`SettingsManager` isn't observable),
+    /// so a pick in the language bar shows up even before the first request.
+    public private(set) var targetLanguage = SettingsManager.shared.settings.targetLanguage
 
     public private(set) var translatedText = ""
     /// Source language as returned by the model: an ISO 639-1 code, e.g. "pl".
@@ -65,6 +66,7 @@ public final class TranslationSession {
     /// Saves the new target language to settings and re-translates the current text.
     public func selectTargetLanguage(_ language: String, modelContext: ModelContext) {
         SettingsManager.shared.settings.targetLanguage = language
+        targetLanguage = language
         start(modelContext: modelContext)
     }
 

@@ -83,6 +83,7 @@ public final class KeychainService: Sendable {
         switch provider {
         case .google: AppConstants.keychainServiceName
         case .anthropic: "\(AppConstants.keychainServiceName).anthropic"
+        case .apple: "\(AppConstants.keychainServiceName).apple"
         }
     }
 }

@@ -62,7 +62,7 @@ public struct TranslationResultView: View {
                 .tint(.primary)
             }
         } target: {
-            let current = session.targetLanguage ?? SettingsManager.shared.settings.targetLanguage
+            let current = session.targetLanguage
             Menu {
                 Picker("Target Language", selection: Binding(
                     get: { current },

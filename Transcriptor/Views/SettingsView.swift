@@ -45,26 +45,28 @@ struct SettingsView: View {
             }
             .pickerStyle(.segmented)
 
-            LabeledContent("API Key") {
-                HStack {
-                    Group {
-                        if showAPIKey {
-                            TextField(provider.apiKeyPlaceholder, text: apiKeyBinding(for: provider))
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                        } else {
-                            SecureField(provider.apiKeyPlaceholder, text: apiKeyBinding(for: provider))
-                                .textInputAutocapitalization(.never)
+            if provider.requiresAPIKey {
+                LabeledContent("API Key") {
+                    HStack {
+                        Group {
+                            if showAPIKey {
+                                TextField(provider.apiKeyPlaceholder, text: apiKeyBinding(for: provider))
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                            } else {
+                                SecureField(provider.apiKeyPlaceholder, text: apiKeyBinding(for: provider))
+                                    .textInputAutocapitalization(.never)
+                            }
                         }
-                    }
-                    .font(.system(.body, design: .monospaced))
+                        .font(.system(.body, design: .monospaced))
 
-                    Button {
-                        showAPIKey.toggle()
-                    } label: {
-                        Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                        Button {
+                            showAPIKey.toggle()
+                        } label: {
+                            Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                 }
             }
 
@@ -81,15 +83,31 @@ struct SettingsView: View {
                         Text(model.displayName).tag(model)
                     }
                 }
+            case .apple:
+                // Reads the observable system model, so the row updates once the model is ready.
+                LabeledContent("Status") {
+                    Text(OnDeviceTranslationService.unavailabilityReason ?? "Available")
+                        .multilineTextAlignment(.trailing)
+                }
+                if let isSupported = OnDeviceTranslationService.supportsLanguage(settings.targetLanguage) {
+                    LabeledContent(settings.targetLanguage, value: isSupported ? "Supported" : "Not officially supported")
+                }
             }
         } header: {
             Text("Provider")
         } footer: {
-            Text(LocalizedStringKey(provider.apiKeyHint))
+            Text(LocalizedStringKey(footerText(for: provider)))
                 .environment(\.openURL, OpenURLAction { url in
                     .systemAction(url, prefersInApp: true)
                 })
         }
+    }
+
+    private func footerText(for provider: TranslationSettings.Provider) -> String {
+        guard provider == .apple, OnDeviceTranslationService.unavailabilityReason != nil else {
+            return provider.apiKeyHint
+        }
+        return provider.apiKeyHint + " Requires Apple Intelligence: a supported iPhone, Apple Intelligence turned on and a Siri language it supports. If Settings shows \"Apple Intelligence & Siri\", turn it on there; if it only shows \"Siri\", Apple Intelligence isn't offered in the current configuration (e.g. the Siri language isn't supported). iOS then downloads the model by itself; apps can't see its progress."
     }
 
     private var aboutSection: some View {
