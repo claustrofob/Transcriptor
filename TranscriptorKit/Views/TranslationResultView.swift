@@ -1,8 +1,9 @@
 import SwiftUI
 import SwiftData
 
-/// Original → language bar → translation, driven by a `TranslationSession`.
-/// Used in TranslationView and ActionView.
+/// Language bar → translation, driven by a `TranslationSession`.
+/// Placed under `TranslationInputBox` in TranslationView and ActionView.
+/// The language bar is shown before the first request too, so the target language can be picked up front.
 public struct TranslationResultView: View {
     private let session: TranslationSession
 
@@ -13,12 +14,9 @@ public struct TranslationResultView: View {
     }
 
     public var body: some View {
-        if let sourceText = session.sourceText {
-            OriginalTextBox(sourceText)
-                .id(TranslationResultView.topID)
+        languageBar
 
-            languageBar
-
+        if session.sourceText != nil {
             TranslationBox(error: session.error, isLoading: session.isTranslating && session.translatedText.isEmpty) {
                 TranslationContentView(
                     normalForm: session.normalForm,
@@ -30,12 +28,16 @@ public struct TranslationResultView: View {
         }
     }
 
-    /// Scroll target at the top of the result.
-    public static let topID = "translationResultTop"
-
     private var languageBar: some View {
         LanguagePair {
-            if session.isDetectingSourceLanguage {
+            if session.sourceText == nil {
+                Text("Auto-detect")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 7)
+                    .background(.fill.tertiary, in: .capsule)
+            } else if session.isDetectingSourceLanguage {
                 HStack(spacing: 6) {
                     ProgressView()
                         .controlSize(.small)
@@ -49,7 +51,8 @@ public struct TranslationResultView: View {
             } else {
                 SourceLanguagePicker(
                     selected: session.selectedSourceLanguage,
-                    fallbackLabel: session.sourceLanguage,
+                    // Nothing detected (e.g. the request failed): keep showing "Auto-detect" instead of "Unknown".
+                    fallbackLabel: session.sourceLanguage ?? "Auto-detect",
                     isDisabled: session.isTranslating
                 ) { lang in
                     session.selectSourceLanguage(lang, modelContext: modelContext)
@@ -91,6 +94,7 @@ public struct OriginalTextBox: View {
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .groupBoxStyle(.roundedCard)
     }
 }
 
@@ -123,7 +127,25 @@ public struct TranslationBox<Content: View>: View {
                 content
             }
         }
+        .groupBoxStyle(.roundedCard)
     }
+}
+
+/// GroupBox with the system background but larger, continuous corners.
+struct RoundedCardGroupBoxStyle: GroupBoxStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            configuration.label
+            configuration.content
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 20))
+    }
+}
+
+extension GroupBoxStyle where Self == RoundedCardGroupBoxStyle {
+    static var roundedCard: RoundedCardGroupBoxStyle { RoundedCardGroupBoxStyle() }
 }
 
 /// Source → target layout: two equal halves with the arrow centered between them.

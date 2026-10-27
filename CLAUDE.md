@@ -43,9 +43,9 @@ iOS-приложение для перевода текста через Google 
 ### Основное приложение — экран Translate; History (кнопка слева вверху) и Settings (справа вверху) открываются через sheet
 
 **Translate:**
-- Поле для ввода текста + кнопка старта перевода
-- При отправке текст уходит из поля ввода наверх экрана (блоки Original / Translation, как в ActionView). Новая отправка отменяет текущий запрос; отменённый запрос не попадает в историю
-- Под полем — меню Target Language и Detail Level (иконка + текущее значение); всё объединено в один блок с Liquid Glass. Значения сохраняются в `SettingsManager`
+- Вверху экрана — блок ввода (`TranslationInputBox`, карточка в стиле блока Translation): поле, кнопка очистки, меню Detail Level, кнопка отправки. Он стоит на месте блока Original; при отправке текст остаётся в поле. Новая отправка отменяет текущий запрос; отменённый запрос не попадает в историю
+- Под ним — строка языков (Source → Target); Target Language выбирается там (видна и до первого перевода, source = «Auto-detect»). Значения сохраняются в `SettingsManager`
+- Тот же лейаут в ActionView: поле предзаполнено расшареным текстом, его можно отредактировать и перевести заново
 - Ниже появляется текст перевода в отформатированном виде + кнопка копирования
 - Указывается оригинальный язык текста
 - Форматирование зависит от настройки "Detail Level":
@@ -105,9 +105,13 @@ iOS-приложение для перевода текста через Google 
 
 `TranslationSession` (TranscriptorKit, `@Observable`) — состояние и логика перевода на экране: новый запрос отменяет текущий, отменённый не сохраняется в историю; смена source/target языка перезапускает перевод. Используется в TranslationView и ActionView.
 
-`TranslationResultView(session:)` (TranscriptorKit) — Original → строка языков (Source ⇅ → Target ⇅, «Detecting» пока язык не определён) → Translation. Используется в TranslationView и ActionView.
+`TranslationInputBox(text:isFocused:onSubmit:)` (TranscriptorKit) — блок ввода: поле, очистка, Detail Level, отправка. Используется в TranslationView и ActionView над `TranslationResultView`.
 
-Строительные блоки (TranscriptorKit, `TranslationResultView.swift`): `OriginalTextBox`, `TranslationBox` (ошибка / загрузка / контент), `LanguagePair` (две равные половины, стрелка по центру), `LanguageChip`. HistoryDetailView собирает из них тот же лейаут, только с текстом вместо кнопок языков.
+`TranslationResultView(session:)` (TranscriptorKit) — строка языков (Source ⇅ → Target ⇅; «Auto-detect» до первого запроса, «Detecting» пока язык не определён) → Translation. Используется в TranslationView и ActionView.
+
+`dismissesKeyboardOnTap()` (TranscriptorKit) — закрытие клавиатуры тапом вне текстового поля (распознаватель на окне, активен только при открытой клавиатуре).
+
+Строительные блоки (TranscriptorKit, `TranslationResultView.swift`): `OriginalTextBox` (только в HistoryDetailView), `TranslationBox` (ошибка / загрузка / контент), `LanguagePair` (две равные половины, стрелка по центру), `LanguageChip`. HistoryDetailView собирает из них тот же лейаут, только с текстом вместо кнопок языков.
 
 `TranslationContentView` (TranscriptorKit) — переиспользуемая view для отображения контента перевода:
 - Source language badge (опционально)

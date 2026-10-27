@@ -5,7 +5,7 @@ extension View {
     /// Dismisses the keyboard on any tap outside a text input while this view is on screen.
     /// Unlike `onTapGesture` on a `Form`, this also catches taps on empty space between sections,
     /// and it doesn't cancel touches, so buttons, pickers and segmented controls keep working.
-    func dismissesKeyboardOnTap() -> some View {
+    public func dismissesKeyboardOnTap() -> some View {
         background(KeyboardDismissTapInstaller())
     }
 }
