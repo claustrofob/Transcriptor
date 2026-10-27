@@ -4,19 +4,9 @@ import TranscriptorKit
 
 struct TranslationView: View {
     @State private var sourceText = ""
-    /// Text of the last submitted request, shown at the top of the screen.
-    @State private var submittedText: String?
-    @State private var translatedText = ""
-    @State private var isTranslating = false
-    @State private var error: String?
+    @State private var session = TranslationSession()
     @State private var showClipboardAlert = false
     @State private var clipboardText = ""
-    @State private var sourceLanguage: String?
-    @State private var selectedSourceLanguage: TranslationSettings.SourceLanguage?
-    @State private var normalForm: String?
-    @State private var synonyms: String?
-    @State private var examples: [TranslationExample] = []
-    @State private var translationTask: Task<Void, Never>?
     @State private var showHistory = false
     @State private var showSettings = false
     @State private var targetLanguage = SettingsManager.shared.settings.targetLanguage
@@ -32,7 +22,7 @@ struct TranslationView: View {
             ZStack(alignment: .bottom) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        translationResult
+                        TranslationResultView(session: session)
                     }
                     .padding()
                     .padding(.bottom, 130)
@@ -49,6 +39,10 @@ struct TranslationView: View {
             }
             .onChange(of: targetLanguage) { _, newValue in
                 SettingsManager.shared.settings.targetLanguage = newValue
+            }
+            // A target language picked in the result applies to the input bar too.
+            .onChange(of: session.targetLanguage) { _, newValue in
+                if let newValue { targetLanguage = newValue }
             }
             .onChange(of: detailLevel) { _, newValue in
                 SettingsManager.shared.settings.detailLevel = newValue
@@ -179,126 +173,21 @@ struct TranslationView: View {
         .accessibilityLabel("Detail Level: \(detailLevel.displayName)")
     }
 
-    @ViewBuilder
-    private var translationResult: some View {
-        if let submittedText {
-            GroupBox {
-                Text(submittedText)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } label: {
-                Label("Original", systemImage: "text.quote")
-                    .font(.caption)
-            }
-            .id("original")
-
-            GroupBox {
-                if let error {
-                    ErrorLabel(error)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } else if isTranslating && translatedText.isEmpty {
-                    HStack {
-                        ProgressView()
-                        Text("Translating...")
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
-                } else {
-                    VStack(alignment: .leading, spacing: 12) {
-                        SourceLanguagePicker(
-                            selected: selectedSourceLanguage,
-                            fallbackLabel: sourceLanguage,
-                            isDisabled: isTranslating
-                        ) { lang in
-                            LanguageFrequencyStore.shared.record(code: lang.code)
-                            selectedSourceLanguage = lang
-                            retranslate(with: lang)
-                        }
-
-                        TranslationContentView(
-                            normalForm: normalForm,
-                            synonyms: synonyms,
-                            translatedText: translatedText,
-                            sourceLanguage: nil,
-                            examples: examples
-                        )
-                    }
-                }
-            } label: {
-                Label("Translation", systemImage: "text.bubble")
-                    .font(.caption)
-            }
-        }
-    }
-
     // MARK: - Actions
 
     /// Moves the input text to the top of the screen and starts translating it,
-    /// cancelling any request still in flight (a cancelled request is not saved to history).
+    /// cancelling any request still in flight.
     private func submit(scrollProxy proxy: ScrollViewProxy) {
         let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
         sourceText = ""
         isTextFieldFocused = false
-        submittedText = text
-        selectedSourceLanguage = nil
-        startTranslation(text: text, sourceLanguage: nil)
+        session.translate(text, modelContext: modelContext)
 
         withAnimation {
-            proxy.scrollTo("original", anchor: .top)
+            proxy.scrollTo(TranslationResultView.topID, anchor: .top)
         }
-    }
-
-    private func retranslate(with lang: TranslationSettings.SourceLanguage) {
-        guard let submittedText else { return }
-        startTranslation(text: submittedText, sourceLanguage: lang)
-    }
-
-    private func startTranslation(text: String, sourceLanguage lang: TranslationSettings.SourceLanguage?) {
-        translationTask?.cancel()
-        resetResult()
-        isTranslating = true
-        translationTask = Task { await translate(text: text, sourceLanguage: lang) }
-    }
-
-    private func resetResult() {
-        translatedText = ""
-        sourceLanguage = nil
-        normalForm = nil
-        synonyms = nil
-        examples = []
-        error = nil
-    }
-
-    /// Pass `lang` to override auto-detection; otherwise the detected language becomes the picker selection.
-    private func translate(text: String, sourceLanguage lang: TranslationSettings.SourceLanguage?) async {
-        do {
-            let output = try await TranslationHelper.translateAndSave(
-                text: text,
-                modelContext: modelContext,
-                sourceLanguage: lang?.name
-            )
-            guard !Task.isCancelled else { return }
-
-            translatedText = output.translatedText
-            sourceLanguage = output.sourceLanguage
-            if lang == nil {
-                selectedSourceLanguage = TranslationSettings.sourceLanguage(fromGeminiString: output.sourceLanguage)
-                if let code = selectedSourceLanguage?.code {
-                    LanguageFrequencyStore.shared.record(code: code)
-                }
-            }
-            normalForm = output.normalForm
-            synonyms = output.synonyms
-            examples = output.examples
-        } catch {
-            guard !Task.isCancelled else { return }
-            self.error = error.localizedDescription
-        }
-
-        isTranslating = false
     }
 
     // MARK: - Clipboard
@@ -310,7 +199,7 @@ struct TranslationView: View {
               let text = UIPasteboard.general.string,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               // The input is emptied on submit, so don't re-offer text that is already translated.
-              text.trimmingCharacters(in: .whitespacesAndNewlines) != submittedText
+              text.trimmingCharacters(in: .whitespacesAndNewlines) != session.sourceText
         else { return }
 
         clipboardText = text

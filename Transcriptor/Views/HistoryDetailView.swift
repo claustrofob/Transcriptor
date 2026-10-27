@@ -6,25 +6,33 @@ struct HistoryDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                GroupBox {
-                    Text(result.sourceText)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } label: {
-                    Label("Original", systemImage: "text.quote")
-                }
+            VStack(alignment: .leading, spacing: 16) {
+                OriginalTextBox(result.sourceText)
 
-                GroupBox {
-                    TranslationContentView(result: result)
-                } label: {
-                    Label("Translation", systemImage: "text.bubble")
+                // Read-only counterpart of the language bar on the Translate screen.
+                LanguagePair {
+                    Text(sourceLanguageName)
+                } target: {
+                    Text(result.targetLanguage)
+                }
+                .font(.subheadline)
+                .lineLimit(1)
+                .padding(.vertical, 7)
+
+                TranslationBox {
+                    // Source language is shown in the language pair instead of a badge.
+                    TranslationContentView(
+                        normalForm: result.normalForm,
+                        synonyms: result.synonyms,
+                        translatedText: result.translatedText,
+                        sourceLanguage: nil,
+                        examples: result.examples
+                    )
                 }
 
                 HStack {
-                    Label(result.targetLanguage, systemImage: "globe")
-                    Spacer()
                     Label(result.model, systemImage: "cpu")
+                    Spacer()
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -51,6 +59,11 @@ struct HistoryDetailView: View {
                 CopyTranslationButton(result.translatedText)
             }
         }
+    }
+
+    private var sourceLanguageName: String {
+        guard let raw = result.sourceLanguage else { return "Unknown" }
+        return TranslationSettings.sourceLanguage(fromGeminiString: raw)?.name ?? raw
     }
 }
 

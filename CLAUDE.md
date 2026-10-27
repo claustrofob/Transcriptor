@@ -103,6 +103,12 @@ iOS-приложение для перевода текста через Google 
 
 ## Shared UI
 
+`TranslationSession` (TranscriptorKit, `@Observable`) — состояние и логика перевода на экране: новый запрос отменяет текущий, отменённый не сохраняется в историю; смена source/target языка перезапускает перевод. Используется в TranslationView и ActionView.
+
+`TranslationResultView(session:)` (TranscriptorKit) — Original → строка языков (Source ⇅ → Target ⇅, «Detecting» пока язык не определён) → Translation. Используется в TranslationView и ActionView.
+
+Строительные блоки (TranscriptorKit, `TranslationResultView.swift`): `OriginalTextBox`, `TranslationBox` (ошибка / загрузка / контент), `LanguagePair` (две равные половины, стрелка по центру), `LanguageChip`. HistoryDetailView собирает из них тот же лейаут, только с текстом вместо кнопок языков.
+
 `TranslationContentView` (TranscriptorKit) — переиспользуемая view для отображения контента перевода:
 - Source language badge (опционально)
 - Нормальная форма + синонимы
