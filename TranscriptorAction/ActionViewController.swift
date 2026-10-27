@@ -10,7 +10,8 @@ class ActionViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        Task { @MainActor in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             let text = await extractText()
 
             guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -35,21 +36,16 @@ class ActionViewController: UIViewController {
         }
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        enableInteractiveDismiss()
-    }
-
     // MARK: - Embedding
 
     private func embedSwiftUIView<V: View>(_ rootView: V) {
         let hostingController = UIHostingController(rootView: rootView)
-
-        hostingController.isModalInPresentation = false
-        if let sheetController = hostingController.sheetPresentationController {
-            sheetController.prefersGrabberVisible = true
-            sheetController.detents = [.medium(), .large()]
-        }
+        // The host app owns the sheet and renders this view from another process. Touches on
+        // pixels drawn by the extension go to the extension; touches on transparent areas reach
+        // the host, where the sheet's pull-to-dismiss lives. UIHostingController paints an opaque
+        // systemBackground by default, which swallowed every drag. The host's sheet provides the
+        // background, so keep ours clear.
+        hostingController.view.backgroundColor = .clear
 
         addChild(hostingController)
         view.addSubview(hostingController.view)
@@ -63,25 +59,6 @@ class ActionViewController: UIViewController {
         ])
 
         hostingController.didMove(toParent: self)
-    }
-
-    /// Walk the entire view controller hierarchy to find every presentation controller
-    /// and allow interactive dismiss. Action Extensions are wrapped by the system in
-    /// additional container controllers, so we must traverse upward.
-    private func enableInteractiveDismiss() {
-        var vc: UIViewController? = self
-        while let current = vc {
-            current.isModalInPresentation = false
-            if let pc = current.presentationController {
-                pc.delegate = self
-            }
-            vc = current.parent
-        }
-
-        if let presenting = presentingViewController {
-            presenting.isModalInPresentation = false
-            presenting.presentationController?.delegate = self
-        }
     }
 
     // MARK: - Text extraction
@@ -120,21 +97,5 @@ class ActionViewController: UIViewController {
         }
 
         return nil
-    }
-}
-
-// MARK: - Interactive dismiss support
-
-extension ActionViewController: UIAdaptivePresentationControllerDelegate {
-    func presentationControllerShouldDismiss(_ presentationController: UIPresentationController) -> Bool {
-        true
-    }
-
-    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        extensionContext?.completeRequest(returningItems: nil)
-    }
-
-    func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
-        extensionContext?.completeRequest(returningItems: nil)
     }
 }
