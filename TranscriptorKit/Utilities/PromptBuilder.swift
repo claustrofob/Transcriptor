@@ -43,7 +43,7 @@ public enum PromptBuilder {
         • "synonyms" → MUST be in the SOURCE LANGUAGE (the language of the input, NOT \(lang)). These are synonyms of the original word, written in the SAME language as the input. NEVER translate synonyms into \(lang). Comma-separated. Empty string if none.
         • "translatedText" → MUST be in \(lang). This is the main translation output. Everything here MUST be written in \(lang): grammatical labels, meanings, explanations. NEVER write this field in English or any other language except \(lang).
         • "shortTranslation" → MUST be in \(lang). Only the main translation variants separated by commas. No explanations.
-        • "sourceLanguage" → MUST be in \(lang). Language name in \(lang) + ISO 639-1 code in parentheses (example: "Польский (pl)" when \(lang) is Russian).
+        • "sourceLanguage" → ISO 639-1 code of the source language only: two lowercase letters, no name (example: "pl" for Polish).
         • "examples" → "original" MUST be in the SOURCE LANGUAGE, "translation" MUST be in \(lang).
 
         CONTENT OF "translatedText" (write ALL of this in \(lang)):
@@ -54,7 +54,7 @@ public enum PromptBuilder {
 
         If the input is already in \(lang), translate into English instead (English becomes the target for all fields above).
 
-        REMINDER: translatedText, shortTranslation, sourceLanguage, and example translations MUST be in \(lang). Do NOT use English for these fields.
+        REMINDER: translatedText, shortTranslation, and example translations MUST be in \(lang). Do NOT use English for these fields.
         """
     }
 
@@ -74,7 +74,7 @@ public enum PromptBuilder {
         • "synonyms" → MUST be in the SOURCE LANGUAGE (the language of the input, NOT \(lang)). Alternative expressions or idioms with similar meaning in the SAME language as the input. NEVER translate into \(lang). Comma-separated. Empty string if none.
         • "translatedText" → MUST be in \(lang). This is the main translation output. Everything here MUST be written in \(lang): meaning, equivalent expressions, explanations. NEVER write this field in English or any other language except \(lang).
         • "shortTranslation" → MUST be in \(lang). Only the main translation variants separated by commas. No explanations.
-        • "sourceLanguage" → MUST be in \(lang). Language name in \(lang) + ISO 639-1 code in parentheses.
+        • "sourceLanguage" → ISO 639-1 code of the source language only: two lowercase letters, no name (example: "pl" for Polish).
         • "examples" → "original" MUST be in the SOURCE LANGUAGE, "translation" MUST be in \(lang).
 
         CONTENT OF "translatedText" (write ALL of this in \(lang)):
@@ -85,7 +85,7 @@ public enum PromptBuilder {
 
         If the input is already in \(lang), translate into English instead (English becomes the target for all fields above).
 
-        REMINDER: translatedText, shortTranslation, sourceLanguage, and example translations MUST be in \(lang). Do NOT use English for these fields.
+        REMINDER: translatedText, shortTranslation, and example translations MUST be in \(lang). Do NOT use English for these fields.
         """
     }
 
@@ -100,7 +100,7 @@ public enum PromptBuilder {
 
         LANGUAGE RULES FOR EACH JSON FIELD:
         • "translatedText" → MUST be in \(lang). The full translation of the input text.
-        • "sourceLanguage" → MUST be in \(lang). Language name in \(lang) + ISO 639-1 code in parentheses.
+        • "sourceLanguage" → ISO 639-1 code of the source language only: two lowercase letters, no name (example: "pl" for Polish).
 
         If the input is already in \(lang), translate into English instead.
         """

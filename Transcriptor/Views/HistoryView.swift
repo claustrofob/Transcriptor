@@ -36,13 +36,16 @@ struct HistoryView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
 
-                                    HStack(spacing: 6) {
-                                        if let sourceLanguage = result.sourceLanguage {
-                                            LanguageBadge(sourceLanguage)
+                                    HStack(spacing: 4) {
+                                        if let sourceLanguage = result.sourceLanguageName {
+                                            Text(sourceLanguage)
+                                            Image(systemName: "arrow.right")
+                                                .imageScale(.small)
                                         }
-
-                                        LanguageBadge("→ \(result.targetLanguage)")
+                                        Text(result.targetLanguage)
                                     }
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                                 }
                                 .padding(.vertical, 4)
                             }
@@ -79,5 +82,25 @@ struct HistoryView: View {
 }
 
 #Preview {
-    HistoryView()
+    let container = try! ModelContainer(
+        for: TranslationResult.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    container.mainContext.insert(TranslationResult(
+        sourceText: "podekscytowany",
+        translatedText: "взволнованный",
+        shortTranslation: "взволнованный, возбуждённый",
+        sourceLanguage: "pl",
+        targetLanguage: "Russian",
+        model: "gemini-2.5-flash"
+    ))
+    container.mainContext.insert(TranslationResult(
+        sourceText: "Good morning",
+        translatedText: "Доброе утро",
+        sourceLanguage: nil,
+        targetLanguage: "Russian",
+        model: "claude-opus-5-5"
+    ))
+    return HistoryView()
+        .modelContainer(container)
 }

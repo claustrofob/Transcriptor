@@ -43,7 +43,7 @@ public enum TranslationSchema {
                 ),
                 "sourceLanguage": JSONSchema(
                     type: "STRING",
-                    description: "Name of the source language written in \(lang) with ISO 639-1 code in parentheses."
+                    description: "ISO 639-1 code of the source language: two lowercase letters only, e.g. \"pl\"."
                 ),
                 "shortTranslation": JSONSchema(
                     type: "STRING",
@@ -69,7 +69,7 @@ public enum TranslationSchema {
                 ),
                 "sourceLanguage": JSONSchema(
                     type: "STRING",
-                    description: "Name of the source language written in \(lang) with ISO 639-1 code in parentheses."
+                    description: "ISO 639-1 code of the source language: two lowercase letters only, e.g. \"pl\"."
                 )
             ],
             required: ["translatedText", "sourceLanguage"]

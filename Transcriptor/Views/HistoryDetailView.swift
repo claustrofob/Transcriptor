@@ -11,7 +11,7 @@ struct HistoryDetailView: View {
 
                 // Read-only counterpart of the language bar on the Translate screen.
                 LanguagePair {
-                    Text(sourceLanguageName)
+                    Text(result.sourceLanguageName ?? "Unknown")
                 } target: {
                     Text(result.targetLanguage)
                 }
@@ -60,11 +60,6 @@ struct HistoryDetailView: View {
             }
         }
     }
-
-    private var sourceLanguageName: String {
-        guard let raw = result.sourceLanguage else { return "Unknown" }
-        return TranslationSettings.sourceLanguage(fromGeminiString: raw)?.name ?? raw
-    }
 }
 
 #Preview {
@@ -74,7 +69,7 @@ struct HistoryDetailView: View {
             translatedText: "прилагательное (м.р.)\nвзволнованный, возбуждённый",
             normalForm: "podekscytowany",
             shortTranslation: "взволнованный, возбуждённый",
-            sourceLanguage: "Польский (pl)",
+            sourceLanguage: "pl",
             targetLanguage: "Russian",
             model: "claude-opus-5-5",
             responseDuration: 2.37

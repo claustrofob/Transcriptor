@@ -14,7 +14,7 @@ public final class TranslationSession {
     public private(set) var targetLanguage: String?
 
     public private(set) var translatedText = ""
-    /// Source language as returned by the model, e.g. "Польский (pl)".
+    /// Source language as returned by the model: an ISO 639-1 code, e.g. "pl".
     public private(set) var sourceLanguage: String?
     /// Detected or user-chosen source language; passed as an override on re-translation.
     public private(set) var selectedSourceLanguage: TranslationSettings.SourceLanguage?
@@ -120,7 +120,7 @@ public final class TranslationSession {
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
             if lang == nil {
-                selectedSourceLanguage = TranslationSettings.sourceLanguage(fromGeminiString: output.sourceLanguage)
+                selectedSourceLanguage = TranslationSettings.sourceLanguage(fromModelString: output.sourceLanguage)
                 if let code = selectedSourceLanguage?.code {
                     LanguageFrequencyStore.shared.record(code: code)
                 }

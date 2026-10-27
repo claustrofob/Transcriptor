@@ -75,7 +75,7 @@ iOS-приложение для перевода текста через Google 
   "normalForm": "podekscytowany",
   "synonyms": "podniecony, rozentuzjazmowany, ożywiony",
   "translatedText": "прилагательное (м.р.)\nвзволнованный, возбуждённый...",
-  "sourceLanguage": "Польский (pl)",
+  "sourceLanguage": "pl",
   "shortTranslation": "взволнованный, возбуждённый",
   "examples": [
     {
@@ -90,7 +90,7 @@ iOS-приложение для перевода текста через Google 
 - `normalForm` (string, required) — словарная (начальная) форма слова на языке оригинала. Существительное → им.п. ед.ч., прилагательное → им.п. ед.ч. м.р., глагол → инфинитив
 - `synonyms` (string, required) — синонимы на языке оригинала через запятую. Пустая строка если нет синонимов
 - `translatedText` (string, required) — полный текст перевода, plain text (нумерованные/ненумерованные списки через \n, без Markdown)
-- `sourceLanguage` (string, required) — язык оригинала на target language + ISO 639-1 код в скобках
+- `sourceLanguage` (string, required) — ISO 639-1 код языка оригинала, две строчные буквы (`pl`). В старых записях истории — формат «Польский (pl)», разбор поддерживает оба (`TranslationSettings.sourceLanguage(fromModelString:)` / `languageName(fromModelString:)`)
 - `shortTranslation` (string, required) — краткий перевод через запятую, plain text (без Markdown)
 - `examples` (array, required) — примеры использования:
   - 5-8 примеров (для свободного текста поля нет)

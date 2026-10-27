@@ -5,6 +5,30 @@ import Foundation
 @Suite("TranslationResult")
 struct TranslationResultTests {
 
+    // MARK: - sourceLanguageName
+
+    @Test func sourceLanguageNameFromCode() {
+        let result = makeResult()
+        result.sourceLanguage = "pl"
+        #expect(result.sourceLanguageName == "Polish")
+    }
+
+    @Test func sourceLanguageNameFromLegacyFormat() {
+        let result = makeResult()
+        result.sourceLanguage = "Польский (pl)"
+        #expect(result.sourceLanguageName == "Polish")
+    }
+
+    @Test func sourceLanguageNameFallsBackToRawString() {
+        let result = makeResult()
+        result.sourceLanguage = "Klingon"
+        #expect(result.sourceLanguageName == "Klingon")
+    }
+
+    @Test func sourceLanguageNameIsNilWhenNotDetected() {
+        #expect(makeResult().sourceLanguageName == nil)
+    }
+
     // MARK: - responseDuration
 
     @Test func responseDurationDefaultsToNil() {

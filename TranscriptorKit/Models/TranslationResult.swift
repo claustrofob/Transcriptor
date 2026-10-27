@@ -27,6 +27,12 @@ public final class TranslationResult {
         }
     }
 
+    /// English name of the source language ("Polish") from the stored code (or legacy
+    /// "Польский (pl)" string); `nil` if it wasn't detected.
+    public var sourceLanguageName: String? {
+        sourceLanguage.map(TranslationSettings.languageName(fromModelString:))
+    }
+
     /// Computed property to encode/decode examples as JSON.
     public var examples: [TranslationExample] {
         get {

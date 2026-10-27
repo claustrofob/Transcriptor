@@ -52,7 +52,7 @@ public struct TranslationResultView: View {
                 SourceLanguagePicker(
                     selected: session.selectedSourceLanguage,
                     // Nothing detected (e.g. the request failed): keep showing "Auto-detect" instead of "Unknown".
-                    fallbackLabel: session.sourceLanguage ?? "Auto-detect",
+                    fallbackLabel: session.sourceLanguage.map(TranslationSettings.languageName(fromModelString:)) ?? "Auto-detect",
                     isDisabled: session.isTranslating
                 ) { lang in
                     session.selectSourceLanguage(lang, modelContext: modelContext)
