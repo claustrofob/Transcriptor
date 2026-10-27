@@ -15,7 +15,6 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 providerSection
-                translationSection
                 aboutSection
             }
             .scrollDismissesKeyboard(.interactively)
@@ -90,22 +89,6 @@ struct SettingsView: View {
                 .environment(\.openURL, OpenURLAction { url in
                     .systemAction(url, prefersInApp: true)
                 })
-        }
-    }
-
-    private var translationSection: some View {
-        Section("Translation") {
-            Picker("Target Language", selection: $settings.targetLanguage) {
-                ForEach(TranslationSettings.supportedLanguages, id: \.self) { language in
-                    Text(language).tag(language)
-                }
-            }
-
-            Picker("Detail Level", selection: $settings.detailLevel) {
-                ForEach(TranslationSettings.DetailLevel.allCases, id: \.self) { level in
-                    Text(level.displayName).tag(level)
-                }
-            }
         }
     }
 

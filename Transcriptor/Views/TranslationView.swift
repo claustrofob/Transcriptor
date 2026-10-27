@@ -17,6 +17,8 @@ struct TranslationView: View {
     @State private var translationTask: Task<Void, Never>?
     @State private var showHistory = false
     @State private var showSettings = false
+    @State private var targetLanguage = SettingsManager.shared.settings.targetLanguage
+    @State private var detailLevel = SettingsManager.shared.settings.detailLevel
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
@@ -31,7 +33,7 @@ struct TranslationView: View {
                         translationResult
                     }
                     .padding()
-                    .padding(.bottom, 80)
+                    .padding(.bottom, 130)
                     .frame(maxWidth: .infinity, minHeight: 1)
                 }
                 .scrollDismissesKeyboard(.interactively)
@@ -42,6 +44,12 @@ struct TranslationView: View {
             }
             .onTapGesture {
                 isTextFieldFocused = false
+            }
+            .onChange(of: targetLanguage) { _, newValue in
+                SettingsManager.shared.settings.targetLanguage = newValue
+            }
+            .onChange(of: detailLevel) { _, newValue in
+                SettingsManager.shared.settings.detailLevel = newValue
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
@@ -87,11 +95,12 @@ struct TranslationView: View {
     // MARK: - Subviews
 
     private func inputBar(proxy: ScrollViewProxy) -> some View {
-        HStack(alignment: .bottom, spacing: 8) {
+        VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .bottom, spacing: 8) {
                 TextField("Enter text to translate...", text: $sourceText, axis: .vertical)
                     .lineLimit(1...5)
                     .focused($isTextFieldFocused)
+                    .padding(.leading, 3)
 
                 if !sourceText.isEmpty {
                     Button {
@@ -99,39 +108,79 @@ struct TranslationView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
+                            // Same width as the send button so their centers line up.
+                            .frame(width: 36)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Clear")
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 13)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .padding(.top, 8)
 
-            Button {
-                startTranslation { await translate(scrollProxy: proxy) }
-            } label: {
-                Group {
-                    if isTranslating {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Image(systemName: "arrow.up")
-                            .font(.title3)
-                            .fontWeight(.semibold)
+            HStack(spacing: 8) {
+                targetLanguageMenu
+                detailLevelMenu
+
+                Spacer(minLength: 0)
+
+                Button {
+                    startTranslation { await translate(scrollProxy: proxy) }
+                } label: {
+                    Group {
+                        if isTranslating {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "arrow.up")
+                                .fontWeight(.semibold)
+                        }
                     }
+                    .foregroundStyle(isSendDisabled ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.white))
+                    .frame(width: 36, height: 36)
+                    .background(isSendDisabled && !isTranslating ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.tint), in: .circle)
                 }
-                .frame(width: 24, height: 24)
+                .buttonStyle(.plain)
+                .disabled(isSendDisabled)
+                .accessibilityLabel("Translate")
             }
-            .frame(width: 48, height: 48)
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.circle)
-            .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating)
         }
+        .padding(12)
+        .glassEffect(.regular, in: .rect(cornerRadius: 24))
         .padding(.horizontal)
         .padding(.bottom, 16)
         .padding(.top, 8)
+    }
+
+    private var isSendDisabled: Bool {
+        sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isTranslating
+    }
+
+    private var targetLanguageMenu: some View {
+        Menu {
+            Picker("Target Language", selection: $targetLanguage) {
+                ForEach(TranslationSettings.supportedLanguages, id: \.self) { language in
+                    Text(language).tag(language)
+                }
+            }
+        } label: {
+            OptionChip(title: targetLanguage, systemImage: "arrow.right")
+        }
+        .tint(.primary)
+        .accessibilityLabel("Target Language: \(targetLanguage)")
+    }
+
+    private var detailLevelMenu: some View {
+        Menu {
+            Picker("Detail Level", selection: $detailLevel) {
+                ForEach(TranslationSettings.DetailLevel.allCases, id: \.self) { level in
+                    Label(level.displayName, systemImage: level.systemImage).tag(level)
+                }
+            }
+        } label: {
+            OptionChip(title: detailLevel.displayName, systemImage: detailLevel.systemImage)
+        }
+        .tint(.primary)
+        .accessibilityLabel("Detail Level: \(detailLevel.displayName)")
     }
 
     @ViewBuilder
@@ -271,6 +320,33 @@ struct TranslationView: View {
 
         clipboardText = text
         showClipboardAlert = true
+    }
+}
+
+private extension TranslationSettings.DetailLevel {
+    /// Mirrors the shape of the formatted result: plain text, bulleted examples, numbered meanings.
+    var systemImage: String {
+        switch self {
+        case .concise: "text.alignleft"
+        case .standard: "list.bullet"
+        case .detailed: "list.number"
+        }
+    }
+}
+
+/// Compact icon + value label used for the option menus in the input bar.
+private struct OptionChip: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.subheadline)
+            .lineLimit(1)
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(.fill.tertiary, in: .capsule)
     }
 }
 
