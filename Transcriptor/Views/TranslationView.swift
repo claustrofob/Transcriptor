@@ -5,12 +5,9 @@ import TranscriptorKit
 struct TranslationView: View {
     @State private var sourceText = ""
     @State private var session = TranslationSession()
-    @State private var showClipboardAlert = false
-    @State private var clipboardText = ""
     @State private var showHistory = false
     @State private var showSettings = false
 
-    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
     @FocusState private var isTextFieldFocused: Bool
 
@@ -30,20 +27,6 @@ struct TranslationView: View {
             .scrollDismissesKeyboard(.interactively)
             .scrollBounceBehavior(.always)
             .dismissesKeyboardOnTap()
-            .onChange(of: scenePhase) { _, newPhase in
-                if newPhase == .active {
-                    checkClipboard()
-                }
-            }
-            .alert("Translate from Clipboard?", isPresented: $showClipboardAlert) {
-                Button("Translate") {
-                    sourceText = clipboardText
-                    submit()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(clipboardText.prefix(200) + (clipboardText.count > 200 ? "..." : ""))
-            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -79,23 +62,6 @@ struct TranslationView: View {
 
         isTextFieldFocused = false
         session.translate(text, modelContext: modelContext)
-    }
-
-    // MARK: - Clipboard
-
-    private func checkClipboard() {
-        let input = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !showHistory, !showSettings,
-              // Don't interrupt a draft: only offer when the input is empty or holds the translated text.
-              input.isEmpty || input == session.sourceText,
-              UIPasteboard.general.hasStrings,
-              let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty,
-              text != session.sourceText
-        else { return }
-
-        clipboardText = text
-        showClipboardAlert = true
     }
 }
 

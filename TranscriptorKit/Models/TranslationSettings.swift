@@ -3,26 +3,23 @@ import Foundation
 public struct TranslationSettings: Codable, Sendable, Equatable {
 
     public var targetLanguage: String
-    public var detailLevel: DetailLevel
     public var provider: Provider
     public var geminiModel: GeminiModel
     public var claudeModel: ClaudeModel
 
     private enum CodingKeys: String, CodingKey {
-        case targetLanguage, detailLevel, provider, claudeModel
+        case targetLanguage, provider, claudeModel
         // Stored under the legacy "model" key so settings saved before multi-provider support keep working.
         case geminiModel = "model"
     }
 
     public init(
         targetLanguage: String,
-        detailLevel: DetailLevel,
         provider: Provider = .google,
         geminiModel: GeminiModel = .gemini25Flash,
         claudeModel: ClaudeModel = .opus55
     ) {
         self.targetLanguage = targetLanguage
-        self.detailLevel = detailLevel
         self.provider = provider
         self.geminiModel = geminiModel
         self.claudeModel = claudeModel
@@ -32,7 +29,6 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fallback = TranslationSettings.default
         targetLanguage = try container.decode(String.self, forKey: .targetLanguage)
-        detailLevel = try container.decode(DetailLevel.self, forKey: .detailLevel)
         provider = try container.decodeIfPresent(Provider.self, forKey: .provider) ?? fallback.provider
         geminiModel = try container.decodeIfPresent(GeminiModel.self, forKey: .geminiModel) ?? fallback.geminiModel
         claudeModel = try container.decodeIfPresent(ClaudeModel.self, forKey: .claudeModel) ?? fallback.claudeModel
@@ -73,28 +69,6 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         }
     }
 
-    public enum DetailLevel: String, Codable, CaseIterable, Sendable {
-        case concise
-        case standard
-        case detailed
-
-        public var displayName: String {
-            switch self {
-            case .concise: "Concise"
-            case .standard: "Standard"
-            case .detailed: "Detailed"
-            }
-        }
-
-        public var description: String {
-            switch self {
-            case .concise: "Direct translation only"
-            case .standard: "Translation with brief context"
-            case .detailed: "Thorough translation with explanations"
-            }
-        }
-    }
-
     public enum GeminiModel: String, Codable, CaseIterable, Sendable {
         case gemini25Flash = "gemini-2.5-flash"
         case gemini25FlashLite = "gemini-2.5-flash-lite"
@@ -130,7 +104,6 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
 
     public static let `default` = TranslationSettings(
         targetLanguage: "Russian",
-        detailLevel: .standard,
         provider: .google,
         geminiModel: .gemini25Flash,
         claudeModel: .opus55

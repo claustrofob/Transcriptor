@@ -34,7 +34,6 @@ public final class TranslationSession {
         /// Detected or user-chosen source language; `nil` means auto-detect.
         var sourceLanguageCode: String?
         var targetLanguage: String
-        var detailLevel: TranslationSettings.DetailLevel
         var provider: TranslationSettings.Provider
         var modelID: String
     }
@@ -77,7 +76,6 @@ public final class TranslationSession {
             text: sourceText,
             sourceLanguageCode: selectedSourceLanguage?.code,
             targetLanguage: settings.targetLanguage,
-            detailLevel: settings.detailLevel,
             provider: settings.provider,
             modelID: settings.modelID
         )

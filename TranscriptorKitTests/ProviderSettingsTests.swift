@@ -14,13 +14,11 @@ struct ProviderSettingsTests {
         #expect(settings.geminiModel == .gemini25Pro)
         #expect(settings.claudeModel == TranslationSettings.default.claudeModel)
         #expect(settings.targetLanguage == "Polish")
-        #expect(settings.detailLevel == .detailed)
     }
 
     @Test func roundTripKeepsBothProviderModels() throws {
         let original = TranslationSettings(
             targetLanguage: "German",
-            detailLevel: .concise,
             provider: .anthropic,
             geminiModel: .gemini25FlashLite,
             claudeModel: .haiku55
@@ -33,7 +31,7 @@ struct ProviderSettingsTests {
     // MARK: - Switching
 
     @Test func switchingProviderKeepsOtherModel() {
-        var settings = TranslationSettings(targetLanguage: "Russian", detailLevel: .standard, geminiModel: .gemini25Pro)
+        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini25Pro)
         settings.provider = .anthropic
         settings.claudeModel = .sonnet55
         settings.provider = .google
@@ -42,7 +40,7 @@ struct ProviderSettingsTests {
     }
 
     @Test func modelIDFollowsActiveProvider() {
-        var settings = TranslationSettings(targetLanguage: "Russian", detailLevel: .standard, geminiModel: .gemini25Flash, claudeModel: .opus55)
+        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini25Flash, claudeModel: .opus55)
         #expect(settings.modelID == "gemini-2.5-flash")
         settings.provider = .anthropic
         #expect(settings.modelID == "claude-opus-5-5")

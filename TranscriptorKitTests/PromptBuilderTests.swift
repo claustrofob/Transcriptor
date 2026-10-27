@@ -62,34 +62,15 @@ struct PromptBuilderTests {
         #expect(count == 1)
     }
 
-    // MARK: - Detail level: concise
+    // MARK: - Result format (always detailed)
 
-    @Test func conciseLevelHasNoExamplesInstruction() {
-        let prompt = makePrompt(type: .word, detailLevel: .concise)
-        #expect(prompt.contains("Return an empty array"))
-    }
-
-    @Test func conciseLevelPromptIsCompact() {
-        let prompt = makePrompt(type: .word, detailLevel: .concise)
-        #expect(prompt.contains("Keep it compact"))
-    }
-
-    // MARK: - Detail level: standard
-
-    @Test func standardLevelHasThreeToFiveExamples() {
-        let prompt = makePrompt(type: .word, detailLevel: .standard)
-        #expect(prompt.contains("3-5 examples"))
-    }
-
-    // MARK: - Detail level: detailed
-
-    @Test func detailedLevelHasFiveToEightExamples() {
-        let prompt = makePrompt(type: .word, detailLevel: .detailed)
+    @Test func wordPromptHasFiveToEightExamples() {
+        let prompt = makePrompt(type: .word)
         #expect(prompt.contains("5-8 examples"))
     }
 
-    @Test func detailedLevelHasNumberedList() {
-        let prompt = makePrompt(type: .word, detailLevel: .detailed)
+    @Test func wordPromptHasNumberedList() {
+        let prompt = makePrompt(type: .word)
         #expect(prompt.contains("Numbered list"))
     }
 
@@ -110,12 +91,10 @@ struct PromptBuilderTests {
     private func makePrompt(
         type: TranslationType,
         language: String = "Russian",
-        detailLevel: TranslationSettings.DetailLevel = .standard,
         sourceOverride: String? = nil
     ) -> String {
         let settings = TranslationSettings(
-            targetLanguage: language,
-            detailLevel: detailLevel
+            targetLanguage: language
         )
         return PromptBuilder.translationPrompt(
             for: settings,
