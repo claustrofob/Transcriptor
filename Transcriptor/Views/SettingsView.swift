@@ -9,6 +9,7 @@ struct SettingsView: View {
         }
     )
     @State private var showAPIKey = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -20,6 +21,13 @@ struct SettingsView: View {
             .scrollDismissesKeyboard(.interactively)
             .dismissesKeyboardOnTap()
             .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .close) {
+                        dismiss()
+                    }
+                }
+            }
             .onChange(of: settings) { _, newValue in
                 SettingsManager.shared.settings = newValue
             }

@@ -15,6 +15,8 @@ struct TranslationView: View {
     @State private var synonyms: String?
     @State private var examples: [TranslationExample] = []
     @State private var translationTask: Task<Void, Never>?
+    @State private var showHistory = false
+    @State private var showSettings = false
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
@@ -57,6 +59,28 @@ struct TranslationView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showHistory = true
+                } label: {
+                    Label("History", systemImage: "clock")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("Settings", systemImage: "gear")
+                }
+            }
+        }
+        .sheet(isPresented: $showHistory) {
+            HistoryView()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
         }
     }
 
@@ -239,6 +263,7 @@ struct TranslationView: View {
 
     private func checkClipboard() {
         guard sourceText.isEmpty,
+              !showHistory, !showSettings,
               UIPasteboard.general.hasStrings,
               let text = UIPasteboard.general.string,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

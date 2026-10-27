@@ -12,7 +12,6 @@
 		088BB9C3F868C5A5CD058C66 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36678DFE6C19CB8EE01F9E4 /* HistoryStore.swift */; };
 		08B152961C2916CDFB3A5107 /* StringMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88B9A78035D085866B66E0A2 /* StringMarkdownTests.swift */; };
 		0AFCFE2B445E916E741C0570 /* ProviderSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC3D12026A650B0EE789A4D /* ProviderSettingsTests.swift */; };
-		0BE3992EF85964AD9234511A /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28AA66F97A0943F6C63A13D6 /* MainTabView.swift */; };
 		142BB7ACDA0A267E04C7BC13 /* TextClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17BE8AF0D4B16561D9F7A734 /* TextClassifierTests.swift */; };
 		16D4C0A1708C4A3765AE90AF /* GeminiModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504DE657D2AE25EDB1FF1123 /* GeminiModels.swift */; };
 		19111920FB7D3D519ADEF091 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 59F19E35B930E4EEEBF3FEF3 /* Assets.xcassets */; };
@@ -119,10 +118,9 @@
 		1A8329366697D61096558FD2 /* String+Markdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Markdown.swift"; sourceTree = "<group>"; };
 		2433F6B103C725A051723877 /* ActionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionView.swift; sourceTree = "<group>"; };
 		24FB2173B48374DD1339F4CE /* ActionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionViewController.swift; sourceTree = "<group>"; };
-		26F5D5C5488BB17BF8F13016 /* Transcriptor.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Transcriptor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		26F5D5C5488BB17BF8F13016 /* Transcriptor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Transcriptor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		27810B3115827D317479B7D8 /* TranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationSettings.swift; sourceTree = "<group>"; };
 		2786F1421EA455DCE339C277 /* PromptBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptBuilderTests.swift; sourceTree = "<group>"; };
-		28AA66F97A0943F6C63A13D6 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		2E59B7F00DD9D2327B5DB6EC /* TranscriptorAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TranscriptorAction.entitlements; sourceTree = "<group>"; };
 		30B4E5E545733B1D5E0651E4 /* TranscriptorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptorApp.swift; sourceTree = "<group>"; };
 		35CB0DBA9D65DD61A8177981 /* LanguageFrequencyStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageFrequencyStoreTests.swift; sourceTree = "<group>"; };
@@ -249,7 +247,6 @@
 			children = (
 				897ECFF38A32B6191037E305 /* HistoryDetailView.swift */,
 				E7503CD7B8496A092C019157 /* HistoryView.swift */,
-				28AA66F97A0943F6C63A13D6 /* MainTabView.swift */,
 				E769D8CCA963464D15216323 /* SettingsView.swift */,
 				3E3E970626DA2445D5FB6660 /* TranslationView.swift */,
 				20502DFAFEB3559DD64D59A8 /* Components */,
@@ -447,9 +444,6 @@
 					BA98DD03ED45E76BA816E34D = {
 						DevelopmentTeam = UHVDZDRE69;
 					};
-					F35F30C49F0CCF0737A213B3 = {
-						DevelopmentTeam = UHVDZDRE69;
-					};
 				};
 			};
 			buildConfigurationList = 8768C75C682C26C2917685BE /* Build configuration list for PBXProject "Transcriptor" */;
@@ -510,7 +504,6 @@
 				C44D148B56A5B6CA6EC39D80 /* HistoryDetailView.swift in Sources */,
 				D59034A7C6B53147D9B4C85F /* HistoryView.swift in Sources */,
 				FA929D917FA342D146B6A516 /* KeyboardDismissOnTap.swift in Sources */,
-				0BE3992EF85964AD9234511A /* MainTabView.swift in Sources */,
 				86AD19A50D3721817DCF349A /* SettingsView.swift in Sources */,
 				2ABC5DB9F6A24C155AAB0559 /* TranscriptorApp.swift in Sources */,
 				0303F5C8379D70B20CBEF812 /* TranslationView.swift in Sources */,
@@ -731,6 +724,7 @@
 				CODE_SIGN_ENTITLEMENTS = Transcriptor/Transcriptor.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UHVDZDRE69;
 				INFOPLIST_FILE = Transcriptor/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -777,6 +771,7 @@
 				CODE_SIGN_ENTITLEMENTS = Transcriptor/Transcriptor.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UHVDZDRE69;
 				INFOPLIST_FILE = Transcriptor/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

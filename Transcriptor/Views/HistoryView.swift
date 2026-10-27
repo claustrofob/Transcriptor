@@ -7,6 +7,7 @@ struct HistoryView: View {
     private var allTranslations: [TranslationResult]
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     private var translations: [TranslationResult] {
         Array(allTranslations.prefix(50))
@@ -55,6 +56,13 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .close) {
+                        dismiss()
+                    }
+                }
+            }
             .task {
                 purgeOldEntries()
             }

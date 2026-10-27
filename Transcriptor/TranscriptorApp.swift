@@ -16,7 +16,7 @@ struct TranscriptorApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            TranslationView()
         }
         .modelContainer(container)
     }
