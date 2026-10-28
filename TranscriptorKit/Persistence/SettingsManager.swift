@@ -30,16 +30,18 @@ public final class SettingsManager: @unchecked Sendable {
 
 // MARK: - Language Frequency Store
 
-/// Tracks source language usage over a rolling 30-day window.
+/// Tracks target language usage (one event per successful translation) over a rolling 30-day window.
 /// Storage format: [languageCode: [dateString: usageCount]]
 /// Languages with no usage in the past 30 days are automatically pruned.
-/// Exposes up to 4 most-used languages for the preferred section of the picker.
+/// Exposes up to 4 most-used languages for the preferred section of the target language menu.
 public final class LanguageFrequencyStore: @unchecked Sendable {
 
     public static let shared = LanguageFrequencyStore()
 
     private let defaults: UserDefaults
-    private let key = "sourceLanguageFrequencyV2"
+    /// Earlier versions tracked source languages under "sourceLanguageFrequencyV2"; that data is ignored.
+    static let storageKey = "targetLanguageFrequency"
+    private let key = storageKey
     private let maxPreferred = 4
     private let windowDays = 30
 

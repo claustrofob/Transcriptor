@@ -64,19 +64,35 @@ public struct TranslationResultView: View {
         } target: {
             let current = session.targetLanguage
             Menu {
-                Picker("Target Language", selection: Binding(
-                    get: { current },
-                    set: { session.selectTargetLanguage($0, modelContext: modelContext) }
-                )) {
-                    ForEach(TranslationSettings.supportedLanguages, id: \.self) { language in
-                        Text(language).tag(language)
-                    }
+                let preferred = preferredTargetLanguages
+                if !preferred.isEmpty {
+                    ForEach(preferred, id: \.self) { targetLanguageItem($0, current: current) }
+                    Divider()
                 }
+                ForEach(TranslationSettings.supportedLanguages, id: \.self) { targetLanguageItem($0, current: current) }
             } label: {
                 LanguageChip(title: current)
             }
             .tint(.primary)
         }
+    }
+}
+
+private extension TranslationResultView {
+    /// Most-used target languages over the last 30 days, shown above the full list.
+    var preferredTargetLanguages: [String] {
+        LanguageFrequencyStore.shared.preferred
+            .map(\.name)
+            .filter(TranslationSettings.supportedLanguages.contains)
+    }
+
+    /// A Toggle renders as a menu item with the system checkmark column; a Picker can't be used
+    /// because preferred languages appear in the menu twice.
+    func targetLanguageItem(_ language: String, current: String) -> some View {
+        Toggle(language, isOn: Binding(
+            get: { language == current },
+            set: { _ in session.selectTargetLanguage(language, modelContext: modelContext) }
+        ))
     }
 }
 

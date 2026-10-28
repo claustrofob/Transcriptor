@@ -65,7 +65,7 @@ struct LanguageFrequencyStoreTests {
         // Inject a usage entry dated 31 days ago directly via record + override
         // We test the boundary by inserting data manually into UserDefaults
         let defaults = store.testDefaults
-        let key = "sourceLanguageFrequencyV2"
+        let key = LanguageFrequencyStore.storageKey
 
         let oldDate = Calendar.current.date(byAdding: .day, value: -31, to: .now)!
         let oldKey = dateString(for: oldDate)
@@ -85,7 +85,7 @@ struct LanguageFrequencyStoreTests {
     @Test func entryFromExactly30DaysAgoIsExcluded() {
         let store = makeStore()
         let defaults = store.testDefaults
-        let key = "sourceLanguageFrequencyV2"
+        let key = LanguageFrequencyStore.storageKey
 
         let boundary = Calendar.current.date(byAdding: .day, value: -30, to: .now)!
         let boundaryKey = dateString(for: boundary)
@@ -101,7 +101,7 @@ struct LanguageFrequencyStoreTests {
     @Test func recordPrunesOldEntries() {
         let store = makeStore()
         let defaults = store.testDefaults
-        let key = "sourceLanguageFrequencyV2"
+        let key = LanguageFrequencyStore.storageKey
 
         let staleDate = Calendar.current.date(byAdding: .day, value: -35, to: .now)!
         let staleKey = dateString(for: staleDate)

@@ -58,7 +58,6 @@ public final class TranslationSession {
 
     /// Re-translates the current text, overriding source language detection.
     public func selectSourceLanguage(_ lang: TranslationSettings.SourceLanguage, modelContext: ModelContext) {
-        LanguageFrequencyStore.shared.record(code: lang.code)
         selectedSourceLanguage = lang
         start(modelContext: modelContext)
     }
@@ -121,11 +120,11 @@ public final class TranslationSession {
 
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
+            if let code = TranslationSettings.sourceLanguages.first(where: { $0.name == targetLanguage })?.code {
+                LanguageFrequencyStore.shared.record(code: code)
+            }
             if lang == nil {
                 selectedSourceLanguage = TranslationSettings.sourceLanguage(fromModelString: output.sourceLanguage)
-                if let code = selectedSourceLanguage?.code {
-                    LanguageFrequencyStore.shared.record(code: code)
-                }
                 // The detected language becomes part of the request: picking it again changes nothing.
                 lastParameters?.sourceLanguageCode = selectedSourceLanguage?.code
             }

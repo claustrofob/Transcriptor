@@ -47,7 +47,6 @@ public struct SourceLanguagePicker<ButtonLabel: View>: View {
     }
 
     /// A Toggle renders as a menu item with the system checkmark column, aligned like a Picker's.
-    /// (A Picker doesn't fit: preferred languages appear twice in the menu.)
     private func menuButton(for lang: TranslationSettings.SourceLanguage) -> some View {
         Toggle(lang.name, isOn: Binding(
             get: { lang == selected },
@@ -56,14 +55,7 @@ public struct SourceLanguagePicker<ButtonLabel: View>: View {
     }
 
     public var body: some View {
-        let preferred = LanguageFrequencyStore.shared.preferred
         Menu {
-            if !preferred.isEmpty {
-                ForEach(preferred) { lang in
-                    menuButton(for: lang)
-                }
-                Divider()
-            }
             ForEach(TranslationSettings.sourceLanguages) { lang in
                 menuButton(for: lang)
             }
