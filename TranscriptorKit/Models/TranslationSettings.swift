@@ -39,7 +39,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         switch provider {
         case .google: geminiModel.rawValue
         case .anthropic: claudeModel.rawValue
-        case .apple: "apple-on-device"
+        case .apple: OnDeviceTranslationService.modelID
         }
     }
 
@@ -74,7 +74,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
             switch self {
             case .google: "Get your free API key at [aistudio.google.com](https://aistudio.google.com/apikey). Stored securely in Keychain."
             case .anthropic: "Get your API key at [platform.claude.com](https://platform.claude.com/settings/keys). Stored securely in Keychain."
-            case .apple: "Runs Apple Intelligence's on-device model: free, offline and private. Quality is lower than the cloud models."
+            case .apple: "Apple Intelligence's on-device model: free, offline and private, but plain translation only (no dictionary details or examples). It's also used automatically when the selected provider has no API key or there's no network."
             }
         }
     }

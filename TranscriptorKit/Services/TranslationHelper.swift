@@ -9,6 +9,21 @@ public struct TranslationOutput: Sendable {
     public let synonyms: String?
     public let examples: [TranslationExample]
     public let translationType: TranslationType
+    /// Set when the on-device model translated instead of the selected provider.
+    public let fallbackReason: FallbackReason?
+}
+
+/// Why the on-device model was used instead of the selected cloud provider.
+public enum FallbackReason: Equatable, Sendable {
+    case noAPIKey(TranslationSettings.Provider)
+    case network
+
+    public var message: String {
+        switch self {
+        case .noAPIKey(let provider): "Translated on-device: no \(provider.displayName) API key set."
+        case .network: "Translated on-device: no connection to the server."
+        }
+    }
 }
 
 /// Shared translation logic used by both TranslationView and ActionView.
@@ -24,34 +39,17 @@ public enum TranslationHelper {
     ) async throws -> TranslationOutput {
         let settings = SettingsManager.shared.settings
 
-        let classification = await TextClassifier.classify(text)
+        let classification = TextClassifier.classify(text)
         try Task.checkCancellation()
 
         let clock = ContinuousClock()
         let start = clock.now
-        let meta = switch settings.provider {
-        case .google:
-            try await GeminiService.shared.translateFull(
-                text: text,
-                settings: settings,
-                translationType: classification,
-                sourceLanguage: sourceLanguage
-            )
-        case .anthropic:
-            try await ClaudeService.shared.translateFull(
-                text: text,
-                settings: settings,
-                translationType: classification,
-                sourceLanguage: sourceLanguage
-            )
-        case .apple:
-            try await OnDeviceTranslationService.translateFull(
-                text: text,
-                settings: settings,
-                translationType: classification,
-                sourceLanguage: sourceLanguage
-            )
-        }
+        let (meta, modelID, fallbackReason) = try await translate(
+            text: text,
+            settings: settings,
+            translationType: classification,
+            sourceLanguage: sourceLanguage
+        )
         let elapsed = clock.now - start
 
         try Task.checkCancellation()
@@ -66,7 +64,7 @@ public enum TranslationHelper {
             shortTranslation: meta.shortTranslation,
             sourceLanguage: meta.sourceLanguage,
             targetLanguage: settings.targetLanguage,
-            model: settings.modelID,
+            model: modelID,
             examples: meta.examples ?? [],
             translationType: classification,
             responseDuration: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
@@ -80,7 +78,74 @@ public enum TranslationHelper {
             normalForm: meta.normalForm,
             synonyms: synonymsValue,
             examples: meta.examples ?? [],
-            translationType: classification
+            translationType: classification,
+            fallbackReason: fallbackReason
         )
+    }
+
+    /// Translates with the selected provider. If it has no API key or the network fails and the
+    /// on-device model is available, translates on-device instead. Returns the model ID actually used.
+    private static func translate(
+        text: String,
+        settings: TranslationSettings,
+        translationType: TranslationType,
+        sourceLanguage: String?
+    ) async throws -> (TranslationMeta, String, FallbackReason?) {
+        do {
+            let meta = switch settings.provider {
+            case .google:
+                try await GeminiService.shared.translateFull(
+                    text: text,
+                    settings: settings,
+                    translationType: translationType,
+                    sourceLanguage: sourceLanguage
+                )
+            case .anthropic:
+                try await ClaudeService.shared.translateFull(
+                    text: text,
+                    settings: settings,
+                    translationType: translationType,
+                    sourceLanguage: sourceLanguage
+                )
+            case .apple:
+                try await OnDeviceTranslationService.translate(
+                    text: text,
+                    settings: settings,
+                    sourceLanguage: sourceLanguage
+                )
+            }
+            return (meta, settings.modelID, nil)
+        } catch {
+            guard !Task.isCancelled,
+                  let reason = fallbackReason(for: error, provider: settings.provider),
+                  OnDeviceTranslationService.unavailabilityReason == nil
+            else { throw error }
+
+            let meta = try await OnDeviceTranslationService.translate(
+                text: text,
+                settings: settings,
+                sourceLanguage: sourceLanguage
+            )
+            return (meta, OnDeviceTranslationService.modelID, reason)
+        }
+    }
+
+    /// Network failures that mean "no connection", as opposed to API errors or cancellation.
+    private static let networkErrorCodes: Set<URLError.Code> = [
+        .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost,
+        .cannotConnectToHost, .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff,
+        .callIsActive, .secureConnectionFailed,
+    ]
+
+    /// Whether `error` from a cloud provider should fall back to the on-device model.
+    static func fallbackReason(for error: Error, provider: TranslationSettings.Provider) -> FallbackReason? {
+        guard provider != .apple else { return nil }
+        if case TranslationError.noAPIKey = error {
+            return .noAPIKey(provider)
+        }
+        if let urlError = error as? URLError, networkErrorCodes.contains(urlError.code) {
+            return .network
+        }
+        return nil
     }
 }

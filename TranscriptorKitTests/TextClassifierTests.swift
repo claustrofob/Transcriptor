@@ -1,90 +1,97 @@
 import Testing
 @testable import TranscriptorKit
 
-@Suite("TextClassifier — heuristic fallback")
+@Suite("TextClassifier")
 struct TextClassifierTests {
 
     // MARK: - Word (≤ 2 tokens)
 
-    @Test func singleWord() async {
-        let result = await TextClassifier.classify("podekscytowany")
+    @Test func singleWord() {
+        let result = TextClassifier.classify("podekscytowany")
         #expect(result == .word)
     }
 
-    @Test func twoWords() async {
-        let result = await TextClassifier.classify("das Haus")
+    // The on-device model used to classify these as free text.
+    @Test func shortInputsMisclassifiedByTheModelAreWords() {
+        #expect(TextClassifier.classify("Cześć") == .word)
+        #expect(TextClassifier.classify("Cześć!") == .word)
+        #expect(TextClassifier.classify("Nie możesz") == .word)
+    }
+
+    @Test func twoWords() {
+        let result = TextClassifier.classify("das Haus")
         #expect(result == .word)
     }
 
-    @Test func emptyString() async {
-        let result = await TextClassifier.classify("")
+    @Test func emptyString() {
+        let result = TextClassifier.classify("")
         #expect(result == .word)
     }
 
-    @Test func whitespaceOnly() async {
-        let result = await TextClassifier.classify("   ")
+    @Test func whitespaceOnly() {
+        let result = TextClassifier.classify("   ")
         #expect(result == .word)
     }
 
     // MARK: - Expression (3–5 tokens, no sentence punctuation)
 
-    @Test func threeWordExpression() async {
-        let result = await TextClassifier.classify("break the ice")
+    @Test func threeWordExpression() {
+        let result = TextClassifier.classify("break the ice")
         #expect(result == .expression)
     }
 
-    @Test func fiveWordExpression() async {
-        let result = await TextClassifier.classify("в конце концов всё таки")
+    @Test func fiveWordExpression() {
+        let result = TextClassifier.classify("в конце концов всё таки")
         #expect(result == .expression)
     }
 
-    @Test func fourWordExpressionWithoutPunctuation() async {
-        let result = await TextClassifier.classify("coûte que coûte vraiment")
+    @Test func fourWordExpressionWithoutPunctuation() {
+        let result = TextClassifier.classify("coûte que coûte vraiment")
         #expect(result == .expression)
     }
 
     // MARK: - Expression edge: punctuation forces freeText
 
-    @Test func threeWordsWithPeriod() async {
-        let result = await TextClassifier.classify("He ran fast.")
+    @Test func threeWordsWithPeriod() {
+        let result = TextClassifier.classify("He ran fast.")
         #expect(result == .freeText)
     }
 
-    @Test func threeWordsWithQuestion() async {
-        let result = await TextClassifier.classify("How are you?")
+    @Test func threeWordsWithQuestion() {
+        let result = TextClassifier.classify("How are you?")
         #expect(result == .freeText)
     }
 
-    @Test func threeWordsWithExclamation() async {
-        let result = await TextClassifier.classify("Stop it now!")
+    @Test func threeWordsWithExclamation() {
+        let result = TextClassifier.classify("Stop it now!")
         #expect(result == .freeText)
     }
 
-    @Test func threeWordsWithSemicolon() async {
-        let result = await TextClassifier.classify("one two; three")
+    @Test func threeWordsWithSemicolon() {
+        let result = TextClassifier.classify("one two; three")
         #expect(result == .freeText)
     }
 
-    @Test func threeWordsWithColon() async {
-        let result = await TextClassifier.classify("items: one two")
+    @Test func threeWordsWithColon() {
+        let result = TextClassifier.classify("items: one two")
         #expect(result == .freeText)
     }
 
     // MARK: - FreeText (6+ tokens)
 
-    @Test func sixWordsNoPunctuation() async {
-        let result = await TextClassifier.classify("one two three four five six")
+    @Test func sixWordsNoPunctuation() {
+        let result = TextClassifier.classify("one two three four five six")
         #expect(result == .freeText)
     }
 
-    @Test func fullSentence() async {
-        let result = await TextClassifier.classify("Jestem podekscytowany tą wspaniałą wiadomością.")
+    @Test func fullSentence() {
+        let result = TextClassifier.classify("Jestem podekscytowany tą wspaniałą wiadomością.")
         #expect(result == .freeText)
     }
 
-    @Test func longParagraph() async {
+    @Test func longParagraph() {
         let text = "The quick brown fox jumps over the lazy dog and then runs away quickly."
-        let result = await TextClassifier.classify(text)
+        let result = TextClassifier.classify(text)
         #expect(result == .freeText)
     }
 }

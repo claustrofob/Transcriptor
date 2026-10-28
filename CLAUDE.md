@@ -65,7 +65,7 @@ iOS-приложение для перевода текста через Google 
 Один запрос к Gemini API через `generateContent` с `response_mime_type: "application/json"` + `response_schema`.
 Возвращает все данные сразу: перевод, метаданные, примеры.
 
-**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. `OnDeviceTranslationService.translateFull(...)` — on-device: те же промпты, вместо JSON-схемы guided generation (`@Generable`). Выбор провайдера — в `TranslationHelper` по `settings.provider`.
+**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. `OnDeviceTranslationService.translate(...)` — on-device (Apple Intelligence): только точный перевод (free-text промпт для любого типа текста, без анализа и примеров), guided generation (`@Generable`) вместо JSON-схемы. Он же — fallback в `TranslationHelper`: если у выбранного облачного провайдера нет API-ключа или запрос упал из-за сети (URLError: нет соединения, таймаут и т.п.; не ошибки API и не отмена) и on-device модель доступна — переводит она; в результате показывается пометка, в историю пишется `apple-on-device`, повторная отправка снова пробует облако. Выбор провайдера — в `TranslationHelper` по `settings.provider`.
 
 Схема ответа общая — `TranslationSchema` (в диалекте Gemini); для Claude она конвертируется через `JSONSchema.standardized()` (lowercase-типы + `additionalProperties: false`).
 
@@ -98,7 +98,7 @@ iOS-приложение для перевода текста через Google 
 
 ## Shared UI
 
-`TranslationSession` (TranscriptorKit, `@Observable`) — состояние и логика перевода на экране: новый запрос отменяет текущий, отменённый не сохраняется в историю; смена source/target языка перезапускает перевод. Повторный запрос с теми же параметрами (текст, source, target, провайдер, модель) не отправляется, если результат уже показан или запрос в пути; после ошибки повтор разрешён. Используется в TranslationView и ActionView.
+`TranslationSession` (TranscriptorKit, `@Observable`) — состояние и логика перевода на экране: новый запрос отменяет текущий, отменённый не сохраняется в историю; смена source/target языка перезапускает перевод. Кнопка Translate всегда отправляет новый запрос и сбрасывает source язык в Auto-detect. В меню языков повторный выбор текущего языка (те же текст, source, target, провайдер, модель) запрос не отправляет, если результат уже показан или запрос в пути; после ошибки или fallback — отправляет. Используется в TranslationView и ActionView.
 
 `TranslationInputBox(text:isFocused:onSubmit:)` (TranscriptorKit) — блок ввода: поле, очистка, отправка на всю ширину. Используется в TranslationView и ActionView над `TranslationResultView`.
 

@@ -18,6 +18,11 @@ public struct TranslationResultView: View {
 
         if session.sourceText != nil {
             TranslationBox(error: session.error, isLoading: session.isTranslating && session.translatedText.isEmpty) {
+                if let fallbackNotice = session.fallbackNotice {
+                    Label(fallbackNotice, systemImage: "iphone")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 TranslationContentView(
                     normalForm: session.normalForm,
                     synonyms: session.synonyms,

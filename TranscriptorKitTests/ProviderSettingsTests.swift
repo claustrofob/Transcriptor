@@ -165,3 +165,31 @@ struct ClaudeModelsTests {
         #expect(object["fallbacks"] == nil)
     }
 }
+
+@Suite("TranslationHelper.fallbackReason")
+struct FallbackReasonTests {
+
+    @Test func missingAPIKeyFallsBack() {
+        let reason = TranslationHelper.fallbackReason(for: TranslationError.noAPIKey(provider: .anthropic), provider: .anthropic)
+        #expect(reason == .noAPIKey(.anthropic))
+    }
+
+    @Test func noConnectionFallsBack() {
+        #expect(TranslationHelper.fallbackReason(for: URLError(.notConnectedToInternet), provider: .google) == .network)
+        #expect(TranslationHelper.fallbackReason(for: URLError(.timedOut), provider: .google) == .network)
+    }
+
+    @Test func cancellationDoesNotFallBack() {
+        #expect(TranslationHelper.fallbackReason(for: URLError(.cancelled), provider: .google) == nil)
+        #expect(TranslationHelper.fallbackReason(for: CancellationError(), provider: .google) == nil)
+    }
+
+    @Test func apiErrorsDoNotFallBack() {
+        let error = TranslationError.apiError(statusCode: 401, message: "invalid key")
+        #expect(TranslationHelper.fallbackReason(for: error, provider: .anthropic) == nil)
+    }
+
+    @Test func onDeviceProviderNeverFallsBack() {
+        #expect(TranslationHelper.fallbackReason(for: URLError(.notConnectedToInternet), provider: .apple) == nil)
+    }
+}

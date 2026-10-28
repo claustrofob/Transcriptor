@@ -3,8 +3,12 @@ import FoundationModels
 
 /// Translates with Apple's on-device model (Foundation Models): no API key, works offline,
 /// runs in the system process, so it works in the Action Extension too.
-/// Uses the same prompts as the cloud providers; guided generation replaces the JSON schema.
+/// The model is too weak for the dictionary-style analysis, so it only produces a plain translation
+/// (the free-text prompt) for any input. Also used as a fallback by `TranslationHelper`.
 public enum OnDeviceTranslationService {
+
+    /// Model identifier stored in history.
+    public static let modelID = "apple-on-device"
 
     /// Why the on-device model can't be used right now; `nil` when it's available.
     /// The model is `Observable`, so SwiftUI views reading this update by themselves once it's ready.
@@ -34,11 +38,11 @@ public enum OnDeviceTranslationService {
         return model.supportsLocale(Locale(identifier: code))
     }
 
+    /// Plain translation only, whatever the text type.
     /// Pass `sourceLanguage` (English name, e.g. "Polish") to override auto-detection.
-    public static func translateFull(
+    public static func translate(
         text: String,
         settings: TranslationSettings,
-        translationType: TranslationType,
         sourceLanguage: String? = nil
     ) async throws -> TranslationMeta {
         if let unavailabilityReason {
@@ -48,34 +52,21 @@ public enum OnDeviceTranslationService {
         let session = LanguageModelSession(
             instructions: PromptBuilder.translationPrompt(
                 for: settings,
-                translationType: translationType,
+                translationType: .freeText,
                 sourceLanguageOverride: sourceLanguage
             )
         )
 
         do {
-            switch translationType {
-            case .word, .expression:
-                let result = try await session.respond(to: text, generating: OnDeviceFullTranslation.self).content
-                return TranslationMeta(
-                    normalForm: result.normalForm,
-                    synonyms: result.synonyms,
-                    translatedText: result.translatedText,
-                    sourceLanguage: result.sourceLanguage,
-                    shortTranslation: result.shortTranslation,
-                    examples: result.examples.map { TranslationExample(original: $0.original, translation: $0.translation) }
-                )
-            case .freeText:
-                let result = try await session.respond(to: text, generating: OnDeviceTextTranslation.self).content
-                return TranslationMeta(
-                    normalForm: nil,
-                    synonyms: nil,
-                    translatedText: result.translatedText,
-                    sourceLanguage: result.sourceLanguage,
-                    shortTranslation: nil,
-                    examples: nil
-                )
-            }
+            let result = try await session.respond(to: text, generating: OnDeviceTranslation.self).content
+            return TranslationMeta(
+                normalForm: nil,
+                synonyms: nil,
+                translatedText: result.translatedText,
+                sourceLanguage: result.sourceLanguage,
+                shortTranslation: nil,
+                examples: nil
+            )
         } catch let error as LanguageModelSession.GenerationError {
             switch error {
             case .unsupportedLanguageOrLocale:
@@ -113,44 +104,13 @@ public enum OnDeviceTranslationService {
     }
 }
 
-// MARK: - Guided generation types
-
-/// On-device counterpart of the word/expression JSON schema in `TranslationSchema`.
-/// Only descriptions, no `.pattern`/`.count` constraints: the system model rejected a generation
-/// guide ("unsupported generation guide"), and the prompt already states the format and counts.
-@Generable
-struct OnDeviceFullTranslation {
-    @Guide(description: "Dictionary (lemma) form of the input in the SOURCE language: noun → nominative singular, verb → infinitive, adjective → nominative singular masculine.")
-    var normalForm: String
-
-    @Guide(description: "Synonyms in the SOURCE language, comma-separated. Empty string if none.")
-    var synonyms: String
-
-    @Guide(description: "Full translation and explanation, written entirely in the target language. Plain text, no Markdown.")
-    var translatedText: String
-
-    @Guide(description: "ISO 639-1 code of the source language: two lowercase letters, e.g. \"pl\".")
-    var sourceLanguage: String
-
-    @Guide(description: "Brief translation variants in the target language, comma-separated.")
-    var shortTranslation: String
-
-    @Guide(description: "5 to 8 usage examples covering all meanings, using different grammatical forms of the word.")
-    var examples: [OnDeviceExample]
-}
-
-@Generable
-struct OnDeviceExample {
-    @Guide(description: "A natural sentence in the source language using the word.")
-    var original: String
-
-    @Guide(description: "The same sentence translated into the target language.")
-    var translation: String
-}
+// MARK: - Guided generation type
 
 /// On-device counterpart of the free-text JSON schema in `TranslationSchema`.
+/// Only descriptions, no `.pattern`/`.count` constraints: the system model rejected a generation
+/// guide ("unsupported generation guide").
 @Generable
-struct OnDeviceTextTranslation {
+struct OnDeviceTranslation {
     @Guide(description: "Full translation of the input text, written entirely in the target language.")
     var translatedText: String
 

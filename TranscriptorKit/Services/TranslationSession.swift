@@ -23,6 +23,8 @@ public final class TranslationSession {
     public private(set) var synonyms: String?
     public private(set) var examples: [TranslationExample] = []
     public private(set) var error: String?
+    /// Shown above the result when the on-device model translated instead of the selected provider.
+    public private(set) var fallbackNotice: String?
     public private(set) var isTranslating = false
 
     @ObservationIgnored private var task: Task<Void, Never>?
@@ -46,14 +48,11 @@ public final class TranslationSession {
         isTranslating && selectedSourceLanguage == nil && sourceLanguage == nil
     }
 
-    /// Starts translating text. New text is auto-detected; the same text keeps its source language.
-    /// Does nothing if the result for the same text and settings is already shown or in flight.
+    /// Always starts a new request with an auto-detected source language (the Translate button).
     public func translate(_ text: String, modelContext: ModelContext) {
-        if text != sourceText {
-            selectedSourceLanguage = nil
-        }
+        selectedSourceLanguage = nil
         sourceText = text
-        start(modelContext: modelContext)
+        start(modelContext: modelContext, force: true)
     }
 
     /// Re-translates the current text, overriding source language detection.
@@ -69,7 +68,9 @@ public final class TranslationSession {
         start(modelContext: modelContext)
     }
 
-    private func start(modelContext: ModelContext) {
+    /// `force` skips the unchanged-parameters check, which only guards the language menus
+    /// against re-sending the same request when the current language is picked again.
+    private func start(modelContext: ModelContext, force: Bool = false) {
         guard let sourceText else { return }
 
         let settings = SettingsManager.shared.settings
@@ -81,7 +82,7 @@ public final class TranslationSession {
             modelID: settings.modelID
         )
         // A failed request may be retried with the same parameters (e.g. after adding an API key).
-        if parameters == lastParameters, error == nil {
+        if !force, parameters == lastParameters, error == nil {
             return
         }
         lastParameters = parameters
@@ -102,6 +103,7 @@ public final class TranslationSession {
         synonyms = nil
         examples = []
         error = nil
+        fallbackNotice = nil
     }
 
     /// Pass `lang` to override auto-detection; otherwise the detected language becomes the selection.
@@ -127,6 +129,11 @@ public final class TranslationSession {
                 selectedSourceLanguage = TranslationSettings.sourceLanguage(fromModelString: output.sourceLanguage)
                 // The detected language becomes part of the request: picking it again changes nothing.
                 lastParameters?.sourceLanguageCode = selectedSourceLanguage?.code
+            }
+            fallbackNotice = output.fallbackReason?.message
+            if output.fallbackReason != nil {
+                // Let the same request be sent again, e.g. once the network is back.
+                lastParameters = nil
             }
             normalForm = output.normalForm
             synonyms = output.synonyms

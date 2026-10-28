@@ -1,7 +1,5 @@
 import Foundation
-import FoundationModels
 
-@Generable
 public enum TranslationType: String, Codable, Sendable {
     case word
     case expression
