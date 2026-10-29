@@ -120,3 +120,35 @@ struct TranslationResultTests {
         )
     }
 }
+
+@Suite("TranslationContentView.copyText")
+@MainActor
+struct CopyTextTests {
+
+    @Test func includesEveryBlockInDisplayOrder() {
+        let view = TranslationContentView(
+            normalForm: "podekscytowany",
+            synonyms: "podniecony, ożywiony",
+            translatedText: "прилагательное\nвзволнованный",
+            examples: [
+                TranslationExample(original: "Jestem podekscytowany.", translation: "Я взволнован."),
+                TranslationExample(original: "Był podekscytowany.", translation: "Он был взволнован."),
+            ]
+        )
+        #expect(view.copyText == """
+            podekscytowany
+            podniecony, ożywiony
+
+            прилагательное
+            взволнованный
+
+            • Jestem podekscytowany. — Я взволнован.
+            • Był podekscytowany. — Он был взволнован.
+            """)
+    }
+
+    @Test func freeTextIsJustTheTranslation() {
+        let view = TranslationContentView(normalForm: "", synonyms: nil, translatedText: "Доброе утро")
+        #expect(view.copyText == "Доброе утро")
+    }
+}

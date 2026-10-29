@@ -115,11 +115,12 @@ iOS-приложение для перевода текста через Google 
 - Нормальная форма + синонимы
 - Текст перевода (plain Text)
 - Список примеров (ExamplesView), отделённый Divider
+- Кнопка копирования (иконка) в правом верхнем углу: копирует весь результат — нормальную форму, синонимы, перевод и примеры («оригинал — перевод»). Так она есть везде: в основном приложении, ActionView и истории (в nav bar кнопки копирования нет)
 
 `CopyTranslationButton` (TranscriptorKit) — кнопка копирования с анимацией "Copied!":
 - Параметры: text, label (default "Copy"), fullWidth (default false)
 - fullWidth: true — bordered стиль на всю ширину, зелёный tint при копировании
-- fullWidth: false — компактная кнопка для toolbar
+- fullWidth: false — компактная кнопка (в TranslationContentView — только иконка)
 
 Обе view используются в: TranslationView, ActionView, HistoryDetailView.
 

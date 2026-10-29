@@ -26,23 +26,27 @@ public struct CopyTranslationButton: View {
                 .buttonStyle(.bordered)
                 .tint(copied ? .green : nil)
         } else {
+            // Neutral like the surrounding text; green while showing "Copied!".
             button
+                .tint(copied ? .green : .secondary)
         }
     }
 
     private var button: some View {
         Button {
             UIPasteboard.general.string = text
-            copied = true
+            withAnimation { copied = true }
             Task {
                 try? await Task.sleep(for: .seconds(2))
-                copied = false
+                withAnimation { copied = false }
             }
         } label: {
             Label(
                 copied ? "Copied!" : label,
                 systemImage: copied ? "checkmark" : "doc.on.doc"
             )
+            // SF Symbols' Magic Replace morphs the copy icon into the checkmark and back.
+            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .padding(.vertical, fullWidth ? 12 : 0)
         }

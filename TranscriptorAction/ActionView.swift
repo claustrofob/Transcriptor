@@ -43,10 +43,6 @@ struct ActionView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { onDone() }
                 }
-
-                ToolbarItem(placement: .primaryAction) {
-                    CopyTranslationButton(session.translatedText)
-                }
             }
             .task {
                 session.translate(sourceText, modelContext: modelContext)

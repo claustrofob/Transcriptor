@@ -58,11 +58,6 @@ struct HistoryDetailView: View {
         }
         .navigationTitle("Translation")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                CopyTranslationButton(result.translatedText)
-            }
-        }
     }
 }
 
