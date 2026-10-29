@@ -16,7 +16,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     public init(
         targetLanguage: String,
         provider: Provider = .google,
-        geminiModel: GeminiModel = .gemini25Flash,
+        geminiModel: GeminiModel = .gemini38Flash,
         claudeModel: ClaudeModel = .opus55
     ) {
         self.targetLanguage = targetLanguage
@@ -30,7 +30,8 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         let fallback = TranslationSettings.default
         targetLanguage = try container.decode(String.self, forKey: .targetLanguage)
         provider = try container.decodeIfPresent(Provider.self, forKey: .provider) ?? fallback.provider
-        geminiModel = try container.decodeIfPresent(GeminiModel.self, forKey: .geminiModel) ?? fallback.geminiModel
+        geminiModel = try container.decodeIfPresent(String.self, forKey: .geminiModel)
+            .map(GeminiModel.init(storedValue:)) ?? fallback.geminiModel
         claudeModel = try container.decodeIfPresent(ClaudeModel.self, forKey: .claudeModel) ?? fallback.claudeModel
     }
 
@@ -80,15 +81,27 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     }
 
     public enum GeminiModel: String, Codable, CaseIterable, Sendable {
-        case gemini25Flash = "gemini-2.5-flash"
-        case gemini25FlashLite = "gemini-2.5-flash-lite"
-        case gemini25Pro = "gemini-2.5-pro"
+        case gemini38Flash = "gemini-3.8-flash"
+        case gemini35FlashLite = "gemini-3.5-flash-lite"
+        case gemini4Argon = "gemini-4-argon"
 
         public var displayName: String {
             switch self {
-            case .gemini25Flash: "Gemini 2.5 Flash"
-            case .gemini25FlashLite: "Gemini 2.5 Flash Lite (Fast)"
-            case .gemini25Pro: "Gemini 2.5 Pro (Quality)"
+            case .gemini38Flash: "Gemini 3.8 Flash"
+            case .gemini35FlashLite: "Gemini 3.5 Flash-Lite (Fast)"
+            case .gemini4Argon: "Gemini 4 Argon (Quality, paid)"
+            }
+        }
+
+        /// Maps a stored model ID to a current model. Retired models (e.g. Gemini 2.5, which Google
+        /// now serves only to its earlier users) move to their replacement, so old settings still decode.
+        init(storedValue: String) {
+            if let model = GeminiModel(rawValue: storedValue) {
+                self = model
+            } else if storedValue.contains("flash-lite") {
+                self = .gemini35FlashLite
+            } else {
+                self = TranslationSettings.default.geminiModel
             }
         }
     }
@@ -115,7 +128,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     public static let `default` = TranslationSettings(
         targetLanguage: "Russian",
         provider: .google,
-        geminiModel: .gemini25Flash,
+        geminiModel: .gemini38Flash,
         claudeModel: .opus55
     )
 

@@ -11,16 +11,28 @@ struct ProviderSettingsTests {
         let json = #"{"targetLanguage":"Polish","detailLevel":"detailed","model":"gemini-2.5-pro"}"#
         let settings = try JSONDecoder().decode(TranslationSettings.self, from: Data(json.utf8))
         #expect(settings.provider == .google)
-        #expect(settings.geminiModel == .gemini25Pro)
+        #expect(settings.geminiModel == .gemini38Flash)
         #expect(settings.claudeModel == TranslationSettings.default.claudeModel)
         #expect(settings.targetLanguage == "Polish")
+    }
+
+    @Test(arguments: [
+        ("gemini-2.5-flash", TranslationSettings.GeminiModel.gemini38Flash),
+        ("gemini-2.5-pro", .gemini38Flash),
+        ("gemini-2.5-flash-lite", .gemini35FlashLite),
+        ("gemini-4-argon", .gemini4Argon),
+    ])
+    func retiredGeminiModelsMoveToReplacements(stored: String, expected: TranslationSettings.GeminiModel) throws {
+        let json = #"{"targetLanguage":"Russian","model":"\#(stored)"}"#
+        let settings = try JSONDecoder().decode(TranslationSettings.self, from: Data(json.utf8))
+        #expect(settings.geminiModel == expected)
     }
 
     @Test func roundTripKeepsBothProviderModels() throws {
         let original = TranslationSettings(
             targetLanguage: "German",
             provider: .anthropic,
-            geminiModel: .gemini25FlashLite,
+            geminiModel: .gemini35FlashLite,
             claudeModel: .haiku55
         )
         let data = try JSONEncoder().encode(original)
@@ -31,17 +43,17 @@ struct ProviderSettingsTests {
     // MARK: - Switching
 
     @Test func switchingProviderKeepsOtherModel() {
-        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini25Pro)
+        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini4Argon)
         settings.provider = .anthropic
         settings.claudeModel = .sonnet55
         settings.provider = .google
-        #expect(settings.geminiModel == .gemini25Pro)
+        #expect(settings.geminiModel == .gemini4Argon)
         #expect(settings.claudeModel == .sonnet55)
     }
 
     @Test func modelIDFollowsActiveProvider() {
-        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini25Flash, claudeModel: .opus55)
-        #expect(settings.modelID == "gemini-2.5-flash")
+        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini38Flash, claudeModel: .opus55)
+        #expect(settings.modelID == "gemini-3.8-flash")
         settings.provider = .anthropic
         #expect(settings.modelID == "claude-opus-5-5")
     }

@@ -92,7 +92,7 @@ struct HistoryView: View {
         shortTranslation: "взволнованный, возбуждённый",
         sourceLanguage: "pl",
         targetLanguage: "Russian",
-        model: "gemini-2.5-flash"
+        model: "gemini-3.8-flash"
     ))
     container.mainContext.insert(TranslationResult(
         sourceText: "Good morning",
