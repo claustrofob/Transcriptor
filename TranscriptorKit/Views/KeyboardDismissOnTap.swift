@@ -8,6 +8,24 @@ extension View {
     public func dismissesKeyboardOnTap() -> some View {
         background(KeyboardDismissTapInstaller())
     }
+
+    /// Taps on this view don't dismiss the keyboard (see `dismissesKeyboardOnTap()`),
+    /// e.g. a clear button that should leave the text field focused.
+    public func keepsKeyboardOnTap() -> some View {
+        background(KeyboardKeepingArea())
+    }
+}
+
+/// Marks an area where `dismissesKeyboardOnTap()` ignores taps.
+private struct KeyboardKeepingArea: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        KeyboardDismissTapInstaller.InstallerView.keepingAreas.add(view)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 private struct KeyboardDismissTapInstaller: UIViewRepresentable {
@@ -21,6 +39,9 @@ private struct KeyboardDismissTapInstaller: UIViewRepresentable {
     /// (e.g. when switching to another tab). The recognizer only receives touches while the keyboard is shown,
     /// so it never interferes with menus and other controls otherwise.
     final class InstallerView: UIView, UIGestureRecognizerDelegate {
+        /// Views marked with `keepsKeyboardOnTap()`; held weakly, so removed views drop out by themselves.
+        static let keepingAreas = NSHashTable<UIView>.weakObjects()
+
         private var isKeyboardVisible = false
 
         private lazy var recognizer: UITapGestureRecognizer = {
@@ -66,6 +87,9 @@ private struct KeyboardDismissTapInstaller: UIViewRepresentable {
             while let current = view {
                 if current is UITextField || current is UITextView { return false }
                 view = current.superview
+            }
+            for area in Self.keepingAreas.allObjects where area.window === window {
+                if area.bounds.contains(touch.location(in: area)) { return false }
             }
             return true
         }

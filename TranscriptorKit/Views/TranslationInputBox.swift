@@ -44,11 +44,14 @@ public struct TranslationInputBox: View {
                 if isEditing && !text.isEmpty {
                     Button {
                         text = ""
+                        isFocused.wrappedValue = true
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
+                    // Keep typing after clearing: the tap must not dismiss the keyboard.
+                    .keepsKeyboardOnTap()
                     .accessibilityLabel("Clear")
                 }
             }
