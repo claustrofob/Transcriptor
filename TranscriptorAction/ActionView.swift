@@ -22,9 +22,14 @@ struct ActionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    TranslationInputBox(text: $inputText, isFocused: $isTextFieldFocused) {
-                        submit()
-                    }
+                    TranslationInputBox(
+                        text: $inputText,
+                        isFocused: $isTextFieldFocused,
+                        phase: session.phase,
+                        onTranslate: submit,
+                        onStop: session.stop,
+                        onEdit: session.edit
+                    )
 
                     TranslationResultView(session: session)
                 }

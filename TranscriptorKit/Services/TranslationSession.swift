@@ -25,7 +25,17 @@ public final class TranslationSession {
     public private(set) var error: String?
     /// Shown above the result when the on-device model translated instead of the selected provider.
     public private(set) var fallbackNotice: String?
-    public private(set) var isTranslating = false
+    public private(set) var phase: Phase = .editing
+
+    /// Editing → (Translate) → translating → result → (Edit) → editing; Stop goes back to editing.
+    public enum Phase: Sendable {
+        /// The input is editable; no result is shown.
+        case editing
+        /// A request is in flight; the input is locked and no result is shown.
+        case translating
+        /// The result (or error) is shown; the input stays locked until Edit.
+        case result
+    }
 
     @ObservationIgnored private var task: Task<Void, Never>?
     /// Parameters of the latest request, in flight or finished; used to skip repeating it.
@@ -43,6 +53,8 @@ public final class TranslationSession {
 
     public init() {}
 
+    public var isTranslating: Bool { phase == .translating }
+
     /// Source language is unknown while the first response is pending.
     public var isDetectingSourceLanguage: Bool {
         isTranslating && selectedSourceLanguage == nil && sourceLanguage == nil
@@ -55,13 +67,33 @@ public final class TranslationSession {
         start(modelContext: modelContext, force: true)
     }
 
+    /// Cancels the request in flight and goes back to editing. The cancelled request is not saved.
+    public func stop() {
+        task?.cancel()
+        task = nil
+        lastParameters = nil
+        resetResult()
+        phase = .editing
+    }
+
+    /// Sends the failed request again with the same text and languages.
+    public func retry(modelContext: ModelContext) {
+        start(modelContext: modelContext, force: true)
+    }
+
+    /// Hides the result and goes back to editing the input.
+    public func edit() {
+        phase = .editing
+    }
+
     /// Re-translates the current text, overriding source language detection.
     public func selectSourceLanguage(_ lang: TranslationSettings.SourceLanguage, modelContext: ModelContext) {
         selectedSourceLanguage = lang
         start(modelContext: modelContext)
     }
 
-    /// Saves the new target language to settings and re-translates the current text.
+    /// Saves the new target language to settings and re-translates the current text
+    /// (while editing, only saves it for the next request).
     public func selectTargetLanguage(_ language: String, modelContext: ModelContext) {
         SettingsManager.shared.settings.targetLanguage = language
         targetLanguage = language
@@ -71,7 +103,8 @@ public final class TranslationSession {
     /// `force` skips the unchanged-parameters check, which only guards the language menus
     /// against re-sending the same request when the current language is picked again.
     private func start(modelContext: ModelContext, force: Bool = false) {
-        guard let sourceText else { return }
+        // While editing, the language menus only change settings; Translate sends the request.
+        guard let sourceText, force || phase != .editing else { return }
 
         let settings = SettingsManager.shared.settings
         let parameters = RequestParameters(
@@ -90,7 +123,7 @@ public final class TranslationSession {
         task?.cancel()
         resetResult()
         targetLanguage = settings.targetLanguage
-        isTranslating = true
+        phase = .translating
 
         let override = selectedSourceLanguage
         task = Task { await run(text: sourceText, sourceLanguage: override, modelContext: modelContext) }
@@ -143,6 +176,6 @@ public final class TranslationSession {
             self.error = error.localizedDescription
         }
 
-        isTranslating = false
+        phase = .result
     }
 }

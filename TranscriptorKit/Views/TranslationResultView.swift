@@ -3,7 +3,8 @@ import SwiftData
 
 /// Language bar → translation, driven by a `TranslationSession`.
 /// Placed under `TranslationInputBox` in TranslationView and ActionView.
-/// The language bar is shown before the first request too, so the target language can be picked up front.
+/// The language bar is always shown, so the target language can be picked up front;
+/// the translation box only once the result is in.
 public struct TranslationResultView: View {
     private let session: TranslationSession
 
@@ -16,8 +17,8 @@ public struct TranslationResultView: View {
     public var body: some View {
         languageBar
 
-        if session.sourceText != nil {
-            TranslationBox(error: session.error, isLoading: session.isTranslating && session.translatedText.isEmpty) {
+        if session.phase == .result {
+            TranslationBox(error: session.error, onRetry: { session.retry(modelContext: modelContext) }) {
                 if let fallbackNotice = session.fallbackNotice {
                     Label(fallbackNotice, systemImage: "iphone")
                         .font(.caption)
@@ -35,7 +36,8 @@ public struct TranslationResultView: View {
 
     private var languageBar: some View {
         LanguagePair {
-            if session.sourceText == nil {
+            // Translate always auto-detects, so there is nothing to pick while editing.
+            if session.phase == .editing {
                 Text("Auto-detect")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -119,23 +121,38 @@ public struct OriginalTextBox: View {
     }
 }
 
-/// Group box showing an error, a loading indicator, or the content.
+/// Group box showing an error (with an optional Retry button), a loading indicator, or the content.
 public struct TranslationBox<Content: View>: View {
     private let error: String?
     private let isLoading: Bool
+    private let onRetry: (() -> Void)?
     private let content: Content
 
-    public init(error: String? = nil, isLoading: Bool = false, @ViewBuilder content: () -> Content) {
+    public init(
+        error: String? = nil,
+        isLoading: Bool = false,
+        onRetry: (() -> Void)? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
         self.error = error
         self.isLoading = isLoading
+        self.onRetry = onRetry
         self.content = content()
     }
 
     public var body: some View {
         GroupBox {
             if let error {
-                ErrorLabel(error)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    ErrorLabel(error)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let onRetry {
+                        Button("Retry", systemImage: "arrow.clockwise", action: onRetry)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    }
+                }
             } else if isLoading {
                 HStack {
                     ProgressView()

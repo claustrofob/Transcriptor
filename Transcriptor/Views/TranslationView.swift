@@ -15,9 +15,14 @@ struct TranslationView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    TranslationInputBox(text: $sourceText, isFocused: $isTextFieldFocused) {
-                        submit()
-                    }
+                    TranslationInputBox(
+                        text: $sourceText,
+                        isFocused: $isTextFieldFocused,
+                        phase: session.phase,
+                        onTranslate: submit,
+                        onStop: session.stop,
+                        onEdit: session.edit
+                    )
 
                     TranslationResultView(session: session)
                 }
