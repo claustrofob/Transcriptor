@@ -114,14 +114,34 @@ struct TranslationSchemaTests {
     }
 
     @Test func standardizedSchemaKeepsKeyOrderWithoutGeminiField() throws {
-        let data = try JSONEncoder().encode(TranslationSchema.schema(lang: "Russian").standardized())
-        let json = try #require(String(data: data, encoding: .utf8))
+        let json = try TranslationSchema.schema(lang: "Russian").standardized().orderedJSONString()
         #expect(!json.contains("propertyOrdering"))
         let textType = try #require(json.range(of: "\"textType\""))
         let examples = try #require(json.range(of: "\"examples\""))
         let normalForm = try #require(json.range(of: "\"normalForm\""))
         #expect(textType.lowerBound < normalForm.lowerBound)
         #expect(normalForm.lowerBound < examples.lowerBound)
+    }
+
+    @Test func orderedJSONMatchesEncoderOutput() throws {
+        let schema = TranslationSchema.schema(lang: "Russian").standardized()
+        let ordered = try JSONSerialization.jsonObject(with: Data(try schema.orderedJSONString().utf8)) as? NSDictionary
+        let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(schema)) as? NSDictionary
+        #expect(ordered != nil)
+        #expect(ordered == encoded)
+    }
+
+    @Test func claudeRequestSplicesOrderedSchema() throws {
+        let request = ClaudeRequest(
+            model: "m", maxTokens: 1, systemPrompt: "s", userText: "u", effort: "medium",
+            schema: TranslationSchema.schema(lang: "Russian").standardized(), fallbacks: nil
+        )
+        let json = String(decoding: try request.encodedBody(), as: UTF8.self)
+        #expect(!json.contains(ClaudeRequest.schemaPlaceholder))
+        #expect(try JSONSerialization.jsonObject(with: Data(json.utf8)) is [String: Any])
+        let textType = try #require(json.range(of: "\"textType\""))
+        let normalForm = try #require(json.range(of: "\"normalForm\""))
+        #expect(textType.lowerBound < normalForm.lowerBound)
     }
 
     @Test func enumIsEncodedUnderEnumKey() throws {

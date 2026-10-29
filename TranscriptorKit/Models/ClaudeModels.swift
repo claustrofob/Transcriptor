@@ -25,6 +25,28 @@ public struct ClaudeRequest: Encodable, Sendable {
     public struct Format: Encodable, Sendable {
         public let type: String
         public let schema: JSONSchema
+
+        private enum CodingKeys: String, CodingKey { case type, schema }
+
+        /// JSONEncoder doesn't keep key order, and Claude generates properties in schema order,
+        /// so the schema is written as a placeholder and spliced in by `encodedBody()`.
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(type, forKey: .type)
+            try container.encode(ClaudeRequest.schemaPlaceholder, forKey: .schema)
+        }
+    }
+
+    static let schemaPlaceholder = "__ordered_json_schema__"
+
+    /// The request as JSON, with the schema's keys in generation order.
+    public func encodedBody() throws -> Data {
+        let json = String(decoding: try JSONEncoder().encode(self), as: UTF8.self)
+        let spliced = json.replacingOccurrences(
+            of: "\"\(Self.schemaPlaceholder)\"",
+            with: try outputConfig.format.schema.orderedJSONString()
+        )
+        return Data(spliced.utf8)
     }
 
     public init(model: String, maxTokens: Int, systemPrompt: String, userText: String, effort: String, schema: JSONSchema, fallbacks: String?) {

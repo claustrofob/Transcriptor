@@ -40,7 +40,7 @@ public actor ClaudeService {
             schema: TranslationSchema.schema(lang: settings.targetLanguage).standardized(),
             fallbacks: model.supportsServerFallback ? "default" : nil
         )
-        request.httpBody = try JSONEncoder().encode(body)
+        request.httpBody = try body.encodedBody()
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response, data: data)

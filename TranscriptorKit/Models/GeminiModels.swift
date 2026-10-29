@@ -71,9 +71,10 @@ public struct JSONSchema: Encodable, Sendable {
     public let additionalProperties: Bool?
     /// Allowed values of a string; encoded as `enum` (supported by both Gemini and Claude).
     public let enumValues: [String]?
-    /// Order in which the model generates the properties. Gemini otherwise goes alphabetically;
-    /// it's sent as Gemini's `propertyOrdering` and also fixes the key order of `properties`
-    /// in the encoded JSON, which Claude follows. Unlisted properties go last, alphabetically.
+    /// Order in which the model generates the properties. Gemini otherwise goes alphabetically,
+    /// so it's sent as Gemini's `propertyOrdering`. Claude and the local models follow the key order
+    /// of `properties` instead, which only `orderedJSONString()` preserves (JSONEncoder doesn't).
+    /// Unlisted properties go last, alphabetically.
     public let propertyOrdering: [String]?
     /// `propertyOrdering` is a Gemini extension; standard JSON Schema (Claude) only keeps the key order.
     private let encodesPropertyOrdering: Bool
@@ -140,7 +141,6 @@ public struct JSONSchema: Encodable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(type, forKey: .type)
         if let properties {
-            // JSONEncoder writes keys in the order they're encoded.
             var nested = container.nestedContainer(keyedBy: PropertyKey.self, forKey: .properties)
             for name in orderedPropertyNames {
                 try nested.encode(properties[name], forKey: PropertyKey(stringValue: name))
@@ -154,6 +154,39 @@ public struct JSONSchema: Encodable, Sendable {
         if encodesPropertyOrdering, properties != nil {
             try container.encode(orderedPropertyNames, forKey: .propertyOrdering)
         }
+    }
+
+    /// JSON with every object's keys in a fixed order and `properties` in `orderedPropertyNames` order.
+    public func orderedJSONString() throws -> String {
+        func string(_ value: String) throws -> String {
+            String(decoding: try JSONEncoder().encode(value), as: UTF8.self)
+        }
+        var fields: [String] = ["\"type\":\(try string(type))"]
+        if let description {
+            fields.append("\"description\":\(try string(description))")
+        }
+        if let enumValues {
+            fields.append("\"enum\":[\(try enumValues.map(string).joined(separator: ","))]")
+        }
+        if let properties {
+            let members = try orderedPropertyNames.map { name in
+                "\(try string(name)):\(try properties[name]!.orderedJSONString())"
+            }
+            fields.append("\"properties\":{\(members.joined(separator: ","))}")
+        }
+        if let items {
+            fields.append("\"items\":\(try items.value.orderedJSONString())")
+        }
+        if let required {
+            fields.append("\"required\":[\(try required.map(string).joined(separator: ","))]")
+        }
+        if let additionalProperties {
+            fields.append("\"additionalProperties\":\(additionalProperties)")
+        }
+        if encodesPropertyOrdering, properties != nil {
+            fields.append("\"propertyOrdering\":[\(try orderedPropertyNames.map(string).joined(separator: ","))]")
+        }
+        return "{\(fields.joined(separator: ","))}"
     }
 
     /// Converts a Gemini-style schema (uppercase types) to standard JSON Schema:
