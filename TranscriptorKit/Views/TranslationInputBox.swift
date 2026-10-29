@@ -55,12 +55,20 @@ public struct TranslationInputBox: View {
             .padding(.top, 8)
 
             Button(action: performAction) {
-                Label(actionTitle, systemImage: actionImage)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(isActionDisabled ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.white))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(isActionDisabled ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.tint), in: .capsule)
+                ZStack {
+                    // A new identity per phase: the old title slides out downward, the new one in from the top.
+                    // Full button height, so each title travels all the way out of the clipped capsule.
+                    Label(actionTitle, systemImage: actionImage)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(isActionDisabled ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.white))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .id(phase)
+                        .transition(.asymmetric(insertion: .move(edge: .top), removal: .move(edge: .bottom)))
+                }
+                .background(isActionDisabled ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.tint))
+                .clipShape(.capsule)
+                .animation(.spring(duration: 0.45, bounce: 0.35), value: phase)
             }
             .buttonStyle(.plain)
             .disabled(isActionDisabled)

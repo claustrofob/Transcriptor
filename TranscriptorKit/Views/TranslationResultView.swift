@@ -17,21 +17,26 @@ public struct TranslationResultView: View {
     public var body: some View {
         languageBar
 
-        if session.phase == .result {
-            TranslationBox(error: session.error, onRetry: { session.retry(modelContext: modelContext) }) {
-                if let fallbackNotice = session.fallbackNotice {
-                    Label(fallbackNotice, systemImage: "iphone")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        // Stable container so the box's insertion and removal run under the animation below.
+        VStack(spacing: 0) {
+            if session.phase == .result {
+                TranslationBox(error: session.error, onRetry: { session.retry(modelContext: modelContext) }) {
+                    if let fallbackNotice = session.fallbackNotice {
+                        Label(fallbackNotice, systemImage: "iphone")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    TranslationContentView(
+                        normalForm: session.normalForm,
+                        synonyms: session.synonyms,
+                        translatedText: session.translatedText,
+                        examples: session.examples
+                    )
                 }
-                TranslationContentView(
-                    normalForm: session.normalForm,
-                    synonyms: session.synonyms,
-                    translatedText: session.translatedText,
-                    examples: session.examples
-                )
+                .transition(.reveal)
             }
         }
+        .animation(.smooth(duration: 0.4), value: session.phase == .result)
     }
 
     private var languageBar: some View {
@@ -101,6 +106,22 @@ private extension TranslationResultView {
             set: { _ in session.selectTargetLanguage(language, modelContext: modelContext) }
         ))
     }
+}
+
+/// Unrolls the view downward from its top edge (and rolls it back up on removal), fading it in.
+struct RevealTransition: Transition {
+    func body(content: Content, phase: TransitionPhase) -> some View {
+        content
+            .mask(alignment: .top) {
+                Rectangle()
+                    .scaleEffect(x: 1, y: phase.isIdentity ? 1 : 0, anchor: .top)
+            }
+            .opacity(phase.isIdentity ? 1 : 0)
+    }
+}
+
+extension Transition where Self == RevealTransition {
+    static var reveal: RevealTransition { RevealTransition() }
 }
 
 /// Group box with the source text.
