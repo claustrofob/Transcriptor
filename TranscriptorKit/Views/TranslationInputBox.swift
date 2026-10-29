@@ -67,8 +67,20 @@ public struct TranslationInputBox: View {
         }
         .padding(12)
         // Same card look as the Translation box below it.
-        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 20))
+        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: Self.cornerRadius))
+        // Behind the card, so only the part outside its edges shows.
+        .background {
+            ZStack {
+                if phase == .translating {
+                    RainbowGlow(cornerRadius: Self.cornerRadius)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: phase == .translating)
+        }
     }
+
+    private static let cornerRadius: CGFloat = 20
 
     private var actionTitle: String {
         switch phase {
@@ -103,3 +115,38 @@ public struct TranslationInputBox: View {
         }
     }
 }
+
+/// Rainbow glow shimmering around a rounded rectangle; shown while a translation is loading.
+private struct RainbowGlow: View {
+    let cornerRadius: CGFloat
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private static let colors: [Color] = [.red, .orange, .yellow, .green, .cyan, .blue, .purple, .pink, .red]
+    /// Seconds per full turn of the colors around the perimeter.
+    private static let period: Double = 3
+
+    var body: some View {
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let turn = context.date.timeIntervalSinceReferenceDate
+                .truncatingRemainder(dividingBy: Self.period) / Self.period
+            let gradient = AngularGradient(colors: Self.colors, center: .center, angle: .degrees(turn * 360))
+            let shape = RoundedRectangle(cornerRadius: cornerRadius)
+
+            ZStack {
+                // Wide, soft halo.
+                shape
+                    .stroke(gradient, lineWidth: 10)
+                    .blur(radius: 14)
+                    .opacity(0.8)
+                // Tighter glow that keeps the colors readable at the edge.
+                shape
+                    .stroke(gradient, lineWidth: 3)
+                    .blur(radius: 4)
+            }
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
