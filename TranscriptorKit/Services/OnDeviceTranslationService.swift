@@ -50,9 +50,8 @@ public enum OnDeviceTranslationService {
         }
 
         let session = LanguageModelSession(
-            instructions: PromptBuilder.translationPrompt(
+            instructions: PromptBuilder.plainTranslationPrompt(
                 for: settings,
-                translationType: .freeText,
                 sourceLanguageOverride: sourceLanguage
             )
         )
@@ -60,6 +59,7 @@ public enum OnDeviceTranslationService {
         do {
             let result = try await session.respond(to: text, generating: OnDeviceTranslation.self).content
             return TranslationMeta(
+                textType: nil,
                 normalForm: nil,
                 synonyms: nil,
                 translatedText: result.translatedText,

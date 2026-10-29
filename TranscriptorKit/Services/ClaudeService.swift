@@ -13,7 +13,6 @@ public actor ClaudeService {
     public func translateFull(
         text: String,
         settings: TranslationSettings,
-        translationType: TranslationType,
         sourceLanguage: String? = nil
     ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
@@ -35,10 +34,10 @@ public actor ClaudeService {
         let body = ClaudeRequest(
             model: model.rawValue,
             maxTokens: 16000,
-            systemPrompt: PromptBuilder.translationPrompt(for: settings, translationType: translationType, sourceLanguageOverride: sourceLanguage),
+            systemPrompt: PromptBuilder.translationPrompt(for: settings, sourceLanguageOverride: sourceLanguage),
             userText: text,
             effort: "medium",
-            schema: TranslationSchema.schema(for: translationType, lang: settings.targetLanguage).standardized(),
+            schema: TranslationSchema.schema(lang: settings.targetLanguage).standardized(),
             fallbacks: model.supportsServerFallback ? "default" : nil
         )
         request.httpBody = try JSONEncoder().encode(body)

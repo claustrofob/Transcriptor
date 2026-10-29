@@ -75,7 +75,7 @@ struct ProviderSettingsTests {
 struct JSONSchemaStandardizedTests {
 
     @Test func lowercasesTypesAndClosesObjects() throws {
-        let schema = TranslationSchema.schema(for: .word, lang: "Russian").standardized()
+        let schema = TranslationSchema.schema(lang: "Russian").standardized()
         let object = try encodedObject(schema)
 
         #expect(object["type"] as? String == "object")
@@ -94,7 +94,7 @@ struct JSONSchemaStandardizedTests {
     }
 
     @Test func geminiSchemaHasNoAdditionalProperties() throws {
-        let object = try encodedObject(TranslationSchema.schema(for: .freeText, lang: "Russian"))
+        let object = try encodedObject(TranslationSchema.schema(lang: "Russian"))
         #expect(object["type"] as? String == "OBJECT")
         #expect(object["additionalProperties"] == nil)
     }

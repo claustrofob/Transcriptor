@@ -29,7 +29,7 @@ public enum FallbackReason: Equatable, Sendable {
 /// Shared translation logic used by both TranslationView and ActionView.
 public enum TranslationHelper {
 
-    /// Classifies text, translates using appropriate prompt/schema, saves result to SwiftData, and returns UI output.
+    /// Translates (the cloud model classifies the text itself), saves the result to SwiftData, and returns UI output.
     /// Pass `sourceLanguage` (English name, e.g. "Polish") to override Gemini's auto-detection.
     @MainActor
     public static func translateAndSave(
@@ -39,33 +39,35 @@ public enum TranslationHelper {
     ) async throws -> TranslationOutput {
         let settings = SettingsManager.shared.settings
 
-        let classification = TextClassifier.classify(text)
-        try Task.checkCancellation()
-
         let clock = ContinuousClock()
         let start = clock.now
         let (meta, modelID, fallbackReason) = try await translate(
             text: text,
             settings: settings,
-            translationType: classification,
             sourceLanguage: sourceLanguage
         )
         let elapsed = clock.now - start
 
         try Task.checkCancellation()
 
-        let synonymsValue = meta.synonyms?.isEmpty == true ? nil : meta.synonyms
+        let classification = textType(of: meta)
+        // Free text has no dictionary fields; the cloud schema still returns them as empty values.
+        let isFreeText = classification == .freeText
+        let normalFormValue = isFreeText ? nil : meta.normalForm.nonEmpty
+        let synonymsValue = isFreeText ? nil : meta.synonyms.nonEmpty
+        let shortTranslationValue = isFreeText ? nil : meta.shortTranslation.nonEmpty
+        let examplesValue = isFreeText ? [] : meta.examples ?? []
 
         let result = TranslationResult(
             sourceText: text,
             translatedText: meta.translatedText,
-            normalForm: meta.normalForm,
+            normalForm: normalFormValue,
             synonyms: synonymsValue,
-            shortTranslation: meta.shortTranslation,
+            shortTranslation: shortTranslationValue,
             sourceLanguage: meta.sourceLanguage,
             targetLanguage: settings.targetLanguage,
             model: modelID,
-            examples: meta.examples ?? [],
+            examples: examplesValue,
             translationType: classification,
             responseDuration: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
         )
@@ -75,9 +77,9 @@ public enum TranslationHelper {
         return TranslationOutput(
             translatedText: meta.translatedText,
             sourceLanguage: meta.sourceLanguage,
-            normalForm: meta.normalForm,
+            normalForm: normalFormValue,
             synonyms: synonymsValue,
-            examples: meta.examples ?? [],
+            examples: examplesValue,
             translationType: classification,
             fallbackReason: fallbackReason
         )
@@ -88,7 +90,6 @@ public enum TranslationHelper {
     private static func translate(
         text: String,
         settings: TranslationSettings,
-        translationType: TranslationType,
         sourceLanguage: String?
     ) async throws -> (TranslationMeta, String, FallbackReason?) {
         do {
@@ -97,14 +98,12 @@ public enum TranslationHelper {
                 try await GeminiService.shared.translateFull(
                     text: text,
                     settings: settings,
-                    translationType: translationType,
                     sourceLanguage: sourceLanguage
                 )
             case .anthropic:
                 try await ClaudeService.shared.translateFull(
                     text: text,
                     settings: settings,
-                    translationType: translationType,
                     sourceLanguage: sourceLanguage
                 )
             case .apple:
@@ -130,6 +129,15 @@ public enum TranslationHelper {
         }
     }
 
+    /// Class reported by the cloud model. The on-device model only does plain translation, so it
+    /// reports none; an unknown value falls back to whether dictionary fields came back.
+    static func textType(of meta: TranslationMeta) -> TranslationType {
+        if let type = meta.textType.flatMap(TranslationType.init(rawValue:)) {
+            return type
+        }
+        return meta.normalForm.nonEmpty == nil && (meta.examples ?? []).isEmpty ? .freeText : .word
+    }
+
     /// Network failures that mean "no connection", as opposed to API errors or cancellation.
     private static let networkErrorCodes: Set<URLError.Code> = [
         .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost,
@@ -147,5 +155,13 @@ public enum TranslationHelper {
             return .network
         }
         return nil
+    }
+}
+
+private extension Optional where Wrapped == String {
+    /// `nil` for a missing or empty string.
+    var nonEmpty: String? {
+        guard let self, !self.isEmpty else { return nil }
+        return self
     }
 }

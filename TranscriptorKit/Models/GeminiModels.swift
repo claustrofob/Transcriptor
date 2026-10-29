@@ -69,6 +69,13 @@ public struct JSONSchema: Encodable, Sendable {
     public let required: [String]?
     public let description: String?
     public let additionalProperties: Bool?
+    /// Allowed values of a string; encoded as `enum` (supported by both Gemini and Claude).
+    public let enumValues: [String]?
+
+    private enum CodingKeys: String, CodingKey {
+        case type, properties, items, required, description, additionalProperties
+        case enumValues = "enum"
+    }
 
     public init(
         type: String,
@@ -76,7 +83,8 @@ public struct JSONSchema: Encodable, Sendable {
         items: JSONSchema? = nil,
         required: [String]? = nil,
         description: String? = nil,
-        additionalProperties: Bool? = nil
+        additionalProperties: Bool? = nil,
+        enumValues: [String]? = nil
     ) {
         self.type = type
         self.properties = properties
@@ -84,6 +92,7 @@ public struct JSONSchema: Encodable, Sendable {
         self.required = required
         self.description = description
         self.additionalProperties = additionalProperties
+        self.enumValues = enumValues
     }
 
     /// Converts a Gemini-style schema (uppercase types) to standard JSON Schema:
@@ -96,7 +105,8 @@ public struct JSONSchema: Encodable, Sendable {
             items: items?.value.standardized(),
             required: required,
             description: description,
-            additionalProperties: lowercasedType == "object" ? false : additionalProperties
+            additionalProperties: lowercasedType == "object" ? false : additionalProperties,
+            enumValues: enumValues
         )
     }
 }
@@ -117,6 +127,8 @@ public final class JSONSchemaBox: Encodable, @unchecked Sendable {
 // MARK: - Translation Meta (JSON extraction result)
 
 public struct TranslationMeta: Decodable, Sendable {
+    /// Class decided by the model ("word", "expression", "freeText"); `nil` for the on-device model.
+    public let textType: String?
     public let normalForm: String?
     public let synonyms: String?
     public let translatedText: String

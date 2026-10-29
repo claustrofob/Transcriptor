@@ -33,6 +33,10 @@ struct HistoryDetailView: View {
                 HStack {
                     Label(result.model, systemImage: "cpu")
                     Spacer()
+                    // Records saved before the type was stored have none; don't show the `.word` default for them.
+                    if result.translationType != nil {
+                        Label(result.classifiedType.displayName, systemImage: "textformat")
+                    }
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -72,6 +76,7 @@ struct HistoryDetailView: View {
             sourceLanguage: "pl",
             targetLanguage: "Russian",
             model: "claude-opus-5-5",
+            translationType: .word,
             responseDuration: 2.37
         ))
     }

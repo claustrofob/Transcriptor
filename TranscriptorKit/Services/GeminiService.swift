@@ -15,7 +15,6 @@ public actor GeminiService {
     public func translateFull(
         text: String,
         settings: TranslationSettings,
-        translationType: TranslationType,
         sourceLanguage: String? = nil
     ) async throws -> TranslationMeta {
         let apiKey = try requireAPIKey()
@@ -31,11 +30,11 @@ public actor GeminiService {
 
         let config = GenerationConfig(
             responseMimeType: "application/json",
-            responseSchema: TranslationSchema.schema(for: translationType, lang: settings.targetLanguage)
+            responseSchema: TranslationSchema.schema(lang: settings.targetLanguage)
         )
 
         let body = GeminiRequest(
-            systemPrompt: PromptBuilder.translationPrompt(for: settings, translationType: translationType, sourceLanguageOverride: sourceLanguage),
+            systemPrompt: PromptBuilder.translationPrompt(for: settings, sourceLanguageOverride: sourceLanguage),
             userText: text,
             generationConfig: config
         )

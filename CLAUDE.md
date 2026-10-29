@@ -63,15 +63,16 @@ iOS-приложение для перевода текста через Google 
 ## Перевод (единый JSON-запрос)
 
 Один запрос к Gemini API через `generateContent` с `response_mime_type: "application/json"` + `response_schema`.
-Возвращает все данные сразу: перевод, метаданные, примеры.
+Возвращает все данные сразу: класс текста, перевод, метаданные, примеры. Локального классификатора нет: облачная модель по промпту сначала классифицирует ввод (`word` / `expression` / `freeText`), затем отдаёт словарный результат для слов и выражений или просто перевод для свободного текста (словарные поля пустые; `TranslationHelper` превращает их в nil). Класс сохраняется в историю.
 
-**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. `OnDeviceTranslationService.translate(...)` — on-device (Apple Intelligence): только точный перевод (free-text промпт для любого типа текста, без анализа и примеров), guided generation (`@Generable`) вместо JSON-схемы. Он же — fallback в `TranslationHelper`: если у выбранного облачного провайдера нет API-ключа или запрос упал из-за сети (URLError: нет соединения, таймаут и т.п.; не ошибки API и не отмена) и on-device модель доступна — переводит она; в результате показывается пометка, в историю пишется `apple-on-device`, повторная отправка снова пробует облако. Выбор провайдера — в `TranslationHelper` по `settings.provider`.
+**Метод:** `GeminiService.translateFull(...)` / `ClaudeService.translateFull(...) -> TranslationMeta`. `OnDeviceTranslationService.translate(...)` — on-device (Apple Intelligence): только точный перевод (`PromptBuilder.plainTranslationPrompt`, без классификации, анализа и примеров), guided generation (`@Generable`) вместо JSON-схемы. Он же — fallback в `TranslationHelper`: если у выбранного облачного провайдера нет API-ключа или запрос упал из-за сети (URLError: нет соединения, таймаут и т.п.; не ошибки API и не отмена) и on-device модель доступна — переводит она; в результате показывается пометка, в историю пишется `apple-on-device`, повторная отправка снова пробует облако. Выбор провайдера — в `TranslationHelper` по `settings.provider`.
 
 Схема ответа общая — `TranslationSchema` (в диалекте Gemini); для Claude она конвертируется через `JSONSchema.standardized()` (lowercase-типы + `additionalProperties: false`).
 
 **JSON Schema ответа:**
 ```json
 {
+  "textType": "word",
   "normalForm": "podekscytowany",
   "synonyms": "podniecony, rozentuzjazmowany, ożywiony",
   "translatedText": "прилагательное (м.р.)\nвзволнованный, возбуждённый...",
@@ -87,13 +88,14 @@ iOS-приложение для перевода текста через Google 
 ```
 
 **Поля:**
+- `textType` (string enum, required) — класс ввода, который модель определяет до перевода: `word` (слово, в т.ч. с артиклем/частицей/отрицанием), `expression` (идиома, устойчивое выражение), `freeText` (предложение или текст). Для `freeText` остальные словарные поля — пустые строки / пустой массив
 - `normalForm` (string, required) — словарная (начальная) форма слова на языке оригинала. Существительное → им.п. ед.ч., прилагательное → им.п. ед.ч. м.р., глагол → инфинитив
 - `synonyms` (string, required) — синонимы на языке оригинала через запятую. Пустая строка если нет синонимов
 - `translatedText` (string, required) — полный текст перевода, plain text (нумерованные/ненумерованные списки через \n, без Markdown)
 - `sourceLanguage` (string, required) — ISO 639-1 код языка оригинала, две строчные буквы (`pl`). В старых записях истории — формат «Польский (pl)», разбор поддерживает оба (`TranslationSettings.sourceLanguage(fromModelString:)` / `languageName(fromModelString:)`)
 - `shortTranslation` (string, required) — краткий перевод через запятую, plain text (без Markdown)
 - `examples` (array, required) — примеры использования:
-  - 5-8 примеров (для свободного текста поля нет)
+  - 5-8 примеров (для свободного текста — пустой массив)
   - Каждый элемент: `{ "original": string, "translation": string }`
 
 ## Shared UI
