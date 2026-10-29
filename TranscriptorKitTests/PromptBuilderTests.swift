@@ -99,6 +99,31 @@ struct TranslationSchemaTests {
         #expect(textType.enumValues == TranslationType.allCases.map(\.rawValue))
     }
 
+    @Test func textTypeIsGeneratedFirst() throws {
+        let schema = TranslationSchema.schema(lang: "Russian")
+        #expect(schema.orderedPropertyNames.first == "textType")
+        #expect(Set(schema.orderedPropertyNames) == Set(try #require(schema.properties).keys))
+    }
+
+    @Test func geminiSchemaSendsPropertyOrdering() throws {
+        let data = try JSONEncoder().encode(TranslationSchema.schema(lang: "Russian"))
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let ordering = try #require(object["propertyOrdering"] as? [String])
+        #expect(ordering.first == "textType")
+        #expect(ordering.last == "examples")
+    }
+
+    @Test func standardizedSchemaKeepsKeyOrderWithoutGeminiField() throws {
+        let data = try JSONEncoder().encode(TranslationSchema.schema(lang: "Russian").standardized())
+        let json = try #require(String(data: data, encoding: .utf8))
+        #expect(!json.contains("propertyOrdering"))
+        let textType = try #require(json.range(of: "\"textType\""))
+        let examples = try #require(json.range(of: "\"examples\""))
+        let normalForm = try #require(json.range(of: "\"normalForm\""))
+        #expect(textType.lowerBound < normalForm.lowerBound)
+        #expect(normalForm.lowerBound < examples.lowerBound)
+    }
+
     @Test func enumIsEncodedUnderEnumKey() throws {
         let data = try JSONEncoder().encode(TranslationSchema.schema(lang: "Russian").standardized())
         let json = try #require(String(data: data, encoding: .utf8))

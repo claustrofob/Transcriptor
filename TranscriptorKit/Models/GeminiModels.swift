@@ -71,10 +71,23 @@ public struct JSONSchema: Encodable, Sendable {
     public let additionalProperties: Bool?
     /// Allowed values of a string; encoded as `enum` (supported by both Gemini and Claude).
     public let enumValues: [String]?
+    /// Order in which the model generates the properties. Gemini otherwise goes alphabetically;
+    /// it's sent as Gemini's `propertyOrdering` and also fixes the key order of `properties`
+    /// in the encoded JSON, which Claude follows. Unlisted properties go last, alphabetically.
+    public let propertyOrdering: [String]?
+    /// `propertyOrdering` is a Gemini extension; standard JSON Schema (Claude) only keeps the key order.
+    private let encodesPropertyOrdering: Bool
 
     private enum CodingKeys: String, CodingKey {
-        case type, properties, items, required, description, additionalProperties
+        case type, properties, items, required, description, additionalProperties, propertyOrdering
         case enumValues = "enum"
+    }
+
+    private struct PropertyKey: CodingKey {
+        let stringValue: String
+        var intValue: Int? { nil }
+        init(stringValue: String) { self.stringValue = stringValue }
+        init?(intValue: Int) { nil }
     }
 
     public init(
@@ -84,7 +97,26 @@ public struct JSONSchema: Encodable, Sendable {
         required: [String]? = nil,
         description: String? = nil,
         additionalProperties: Bool? = nil,
-        enumValues: [String]? = nil
+        enumValues: [String]? = nil,
+        propertyOrdering: [String]? = nil
+    ) {
+        self.init(
+            type: type, properties: properties, items: items, required: required, description: description,
+            additionalProperties: additionalProperties, enumValues: enumValues,
+            propertyOrdering: propertyOrdering, encodesPropertyOrdering: true
+        )
+    }
+
+    private init(
+        type: String,
+        properties: [String: JSONSchema]?,
+        items: JSONSchema?,
+        required: [String]?,
+        description: String?,
+        additionalProperties: Bool?,
+        enumValues: [String]?,
+        propertyOrdering: [String]?,
+        encodesPropertyOrdering: Bool
     ) {
         self.type = type
         self.properties = properties
@@ -93,6 +125,35 @@ public struct JSONSchema: Encodable, Sendable {
         self.description = description
         self.additionalProperties = additionalProperties
         self.enumValues = enumValues
+        self.propertyOrdering = propertyOrdering
+        self.encodesPropertyOrdering = encodesPropertyOrdering
+    }
+
+    /// Property names in generation order: `propertyOrdering` first, then the rest alphabetically.
+    var orderedPropertyNames: [String] {
+        guard let properties else { return [] }
+        let listed = (propertyOrdering ?? []).filter { properties[$0] != nil }
+        return listed + properties.keys.filter { !listed.contains($0) }.sorted()
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .type)
+        if let properties {
+            // JSONEncoder writes keys in the order they're encoded.
+            var nested = container.nestedContainer(keyedBy: PropertyKey.self, forKey: .properties)
+            for name in orderedPropertyNames {
+                try nested.encode(properties[name], forKey: PropertyKey(stringValue: name))
+            }
+        }
+        try container.encodeIfPresent(items, forKey: .items)
+        try container.encodeIfPresent(required, forKey: .required)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(additionalProperties, forKey: .additionalProperties)
+        try container.encodeIfPresent(enumValues, forKey: .enumValues)
+        if encodesPropertyOrdering, properties != nil {
+            try container.encode(orderedPropertyNames, forKey: .propertyOrdering)
+        }
     }
 
     /// Converts a Gemini-style schema (uppercase types) to standard JSON Schema:
@@ -106,7 +167,9 @@ public struct JSONSchema: Encodable, Sendable {
             required: required,
             description: description,
             additionalProperties: lowercasedType == "object" ? false : additionalProperties,
-            enumValues: enumValues
+            enumValues: enumValues,
+            propertyOrdering: propertyOrdering,
+            encodesPropertyOrdering: false
         )
     }
 }

@@ -10,6 +10,10 @@ public enum TranslationSchema {
         fullSchema(lang: lang)
     }
 
+    private static let generationOrder = [
+        "textType", "sourceLanguage", "normalForm", "synonyms", "translatedText", "shortTranslation", "examples",
+    ]
+
     private static func fullSchema(lang: String) -> JSONSchema {
         let exampleSchema = JSONSchema(
             type: "OBJECT",
@@ -20,7 +24,8 @@ public enum TranslationSchema {
                 ),
                 "translation": JSONSchema(type: "STRING", description: "Same sentence translated into \(lang)")
             ],
-            required: ["original", "translation"]
+            required: ["original", "translation"],
+            propertyOrdering: ["original", "translation"]
         )
 
         return JSONSchema(
@@ -57,7 +62,9 @@ public enum TranslationSchema {
                     description: "Empty array for free text. Usage examples in natural context. IMPORTANT: Vary the grammatical forms of the lemma across examples — use different tenses, cases, persons, numbers, etc. Do NOT repeat the same inflected form in multiple examples."
                 )
             ],
-            required: ["textType", "normalForm", "synonyms", "translatedText", "sourceLanguage", "shortTranslation", "examples"]
+            required: generationOrder,
+            // Class first, so every other field is written for the class already decided.
+            propertyOrdering: generationOrder
         )
     }
 }

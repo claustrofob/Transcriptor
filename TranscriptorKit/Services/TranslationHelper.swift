@@ -50,6 +50,12 @@ public enum TranslationHelper {
 
         try Task.checkCancellation()
 
+        // A schema-valid but hollow answer (empty translation, placeholder fields): show an error
+        // with Retry instead of an empty result, and keep it out of history.
+        guard !meta.translatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TranslationError.emptyResponse
+        }
+
         let classification = textType(of: meta)
         // Free text has no dictionary fields; the cloud schema still returns them as empty values.
         let isFreeText = classification == .freeText
