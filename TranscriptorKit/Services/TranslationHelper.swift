@@ -11,6 +11,8 @@ public struct TranslationOutput: Sendable {
     public let translationType: TranslationType
     /// Set when the on-device model translated instead of the selected provider.
     public let fallbackReason: FallbackReason?
+    /// The history entry saved for this translation.
+    public let historyID: PersistentIdentifier
 }
 
 /// Why the on-device model was used instead of the selected cloud provider.
@@ -87,7 +89,9 @@ public enum TranslationHelper {
             synonyms: synonymsValue,
             examples: examplesValue,
             translationType: classification,
-            fallbackReason: fallbackReason
+            fallbackReason: fallbackReason,
+            // Read after saving: the ID of an unsaved model is temporary.
+            historyID: result.persistentModelID
         )
     }
 

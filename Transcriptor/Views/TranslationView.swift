@@ -5,7 +5,6 @@ import TranscriptorKit
 struct TranslationView: View {
     @State private var sourceText = ""
     @State private var session = TranslationSession()
-    @State private var showHistory = false
     @State private var showSettings = false
 
     @Environment(\.modelContext) private var modelContext
@@ -34,13 +33,6 @@ struct TranslationView: View {
             .dismissesKeyboardOnTap()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showHistory = true
-                    } label: {
-                        Label("History", systemImage: "clock")
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showSettings = true
@@ -48,9 +40,6 @@ struct TranslationView: View {
                         Label("Settings", systemImage: "gear")
                     }
                 }
-            }
-            .sheet(isPresented: $showHistory) {
-                HistoryView()
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()

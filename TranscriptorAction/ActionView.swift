@@ -8,6 +8,8 @@ struct ActionView: View {
 
     @State private var session = TranslationSession()
     @State private var inputText: String
+    /// `.task` runs again whenever the screen reappears, e.g. back from a history entry.
+    @State private var hasTranslatedSharedText = false
     @FocusState private var isTextFieldFocused: Bool
 
     @Environment(\.modelContext) private var modelContext
@@ -45,6 +47,8 @@ struct ActionView: View {
                 }
             }
             .task {
+                guard !hasTranslatedSharedText else { return }
+                hasTranslatedSharedText = true
                 session.translate(sourceText, modelContext: modelContext)
             }
         }

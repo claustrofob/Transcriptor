@@ -26,6 +26,13 @@ public final class TranslationSession {
     /// Shown above the result when the on-device model translated instead of the selected provider.
     public private(set) var fallbackNotice: String?
     public private(set) var phase: Phase = .editing
+    /// History entry saved for the current result.
+    public private(set) var resultID: PersistentIdentifier?
+
+    /// History entry of the result on screen; the history list hides it until the result goes away.
+    public var visibleResultID: PersistentIdentifier? {
+        phase == .result ? resultID : nil
+    }
 
     /// Editing → (Translate) → translating → result → (Edit) → editing; Stop goes back to editing.
     public enum Phase: Sendable {
@@ -137,6 +144,7 @@ public final class TranslationSession {
         examples = []
         error = nil
         fallbackNotice = nil
+        resultID = nil
     }
 
     /// Pass `lang` to override auto-detection; otherwise the detected language becomes the selection.
@@ -169,6 +177,7 @@ public final class TranslationSession {
             normalForm = output.normalForm
             synonyms = output.synonyms
             examples = output.examples
+            resultID = output.historyID
         } catch {
             guard !Task.isCancelled else { return }
             self.error = error.localizedDescription

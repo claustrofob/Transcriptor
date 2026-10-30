@@ -1,14 +1,17 @@
 import SwiftUI
 import SwiftData
 
-/// Language bar → translation, driven by a `TranslationSession`.
+/// Language bar → translation → history, driven by a `TranslationSession`.
 /// Placed under `TranslationInputBox` in TranslationView and ActionView.
 /// The language bar is always shown, so the target language can be picked up front;
-/// the translation box only once the result is in.
+/// the translation box only once the result is in. The result is saved to history right away,
+/// but its card stays hidden while the result is shown; when the result goes away (Edit, Stop,
+/// a new request), the box flows into that card.
 public struct TranslationResultView: View {
     private let session: TranslationSession
 
     @Environment(\.modelContext) private var modelContext
+    @Namespace private var namespace
 
     public init(session: TranslationSession) {
         self.session = session
@@ -17,9 +20,11 @@ public struct TranslationResultView: View {
     public var body: some View {
         languageBar
 
-        // Stable container so the box's insertion and removal run under the animation below.
-        VStack(spacing: 0) {
+        // One container for the result and the history, so the animation below moves the box
+        // into its history card in the same transaction.
+        VStack(spacing: 16) {
             if session.phase == .result {
+                let resultID = session.resultID
                 TranslationBox(error: session.error, onRetry: { session.retry(modelContext: modelContext) }) {
                     if let fallbackNotice = session.fallbackNotice {
                         Label(fallbackNotice, systemImage: "iphone")
@@ -33,10 +38,16 @@ public struct TranslationResultView: View {
                         examples: session.examples
                     )
                 }
-                .transition(.reveal)
+                // An error has no history card: its ID matches nothing.
+                .matchedGeometryEffect(id: resultID.map(AnyHashable.init) ?? AnyHashable("error"), in: namespace)
+                // A saved result leaves by flowing into its history card; an error just rolls up.
+                .transition(resultID != nil ? .asymmetric(insertion: AnyTransition(.reveal), removal: .opacity) : AnyTransition(.reveal))
             }
+
+            HistoryList(hiddenID: session.visibleResultID, namespace: namespace)
         }
-        .animation(.smooth(duration: 0.4), value: session.phase == .result)
+        .animation(.smooth(duration: 0.45), value: session.phase == .result)
+        .animation(.smooth(duration: 0.45), value: session.visibleResultID)
     }
 
     private var languageBar: some View {
