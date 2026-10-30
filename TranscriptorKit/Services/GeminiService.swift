@@ -112,7 +112,7 @@ public enum TranslationError: LocalizedError {
             case 400: "Bad request: \(message)"
             case 401, 403: "Invalid API key. Please check your key in Settings."
             case 429: "Rate limit exceeded: \(message)"
-            case 500...599: "Server error (\(statusCode)). Please try again later."
+            case 500...599: "Server error (\(statusCode)): \(message) Please try again later."
             default: "API error (\(statusCode)): \(message)"
             }
         }

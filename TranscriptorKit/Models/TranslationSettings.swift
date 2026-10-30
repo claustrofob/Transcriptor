@@ -16,7 +16,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     public init(
         targetLanguage: String,
         provider: Provider = .google,
-        geminiModel: GeminiModel = .gemini38Flash,
+        geminiModel: GeminiModel = .gemini35FlashLite,
         claudeModel: ClaudeModel = .opus55
     ) {
         self.targetLanguage = targetLanguage
@@ -81,28 +81,22 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     }
 
     public enum GeminiModel: String, Codable, CaseIterable, Sendable {
-        case gemini38Flash = "gemini-3.8-flash"
         case gemini35FlashLite = "gemini-3.5-flash-lite"
+        case gemini38Flash = "gemini-3.8-flash"
         case gemini4Argon = "gemini-4-argon"
 
         public var displayName: String {
             switch self {
-            case .gemini38Flash: "Gemini 3.8 Flash"
-            case .gemini35FlashLite: "Gemini 3.5 Flash-Lite (Fast)"
+            case .gemini35FlashLite: "Gemini 3.5 Flash-Lite"
+            case .gemini38Flash: "Gemini 3.8 Flash (Often busy)"
             case .gemini4Argon: "Gemini 4 Argon (Quality, paid)"
             }
         }
 
         /// Maps a stored model ID to a current model. Retired models (e.g. Gemini 2.5, which Google
-        /// now serves only to its earlier users) move to their replacement, so old settings still decode.
+        /// now serves only to its earlier users) move to the default, so old settings still decode.
         init(storedValue: String) {
-            if let model = GeminiModel(rawValue: storedValue) {
-                self = model
-            } else if storedValue.contains("flash-lite") {
-                self = .gemini35FlashLite
-            } else {
-                self = TranslationSettings.default.geminiModel
-            }
+            self = GeminiModel(rawValue: storedValue) ?? TranslationSettings.default.geminiModel
         }
     }
 
@@ -128,7 +122,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     public static let `default` = TranslationSettings(
         targetLanguage: "Russian",
         provider: .google,
-        geminiModel: .gemini38Flash,
+        geminiModel: .gemini35FlashLite,
         claudeModel: .opus55
     )
 

@@ -11,15 +11,15 @@ struct ProviderSettingsTests {
         let json = #"{"targetLanguage":"Polish","detailLevel":"detailed","model":"gemini-2.5-pro"}"#
         let settings = try JSONDecoder().decode(TranslationSettings.self, from: Data(json.utf8))
         #expect(settings.provider == .google)
-        #expect(settings.geminiModel == .gemini38Flash)
+        #expect(settings.geminiModel == .gemini35FlashLite)
         #expect(settings.claudeModel == TranslationSettings.default.claudeModel)
         #expect(settings.targetLanguage == "Polish")
     }
 
     @Test(arguments: [
-        ("gemini-2.5-flash", TranslationSettings.GeminiModel.gemini38Flash),
-        ("gemini-2.5-pro", .gemini38Flash),
-        ("gemini-2.5-flash-lite", .gemini35FlashLite),
+        ("gemini-2.5-flash", TranslationSettings.GeminiModel.gemini35FlashLite),
+        ("gemini-2.5-pro", .gemini35FlashLite),
+        ("gemini-3.8-flash", .gemini38Flash),
         ("gemini-4-argon", .gemini4Argon),
     ])
     func retiredGeminiModelsMoveToReplacements(stored: String, expected: TranslationSettings.GeminiModel) throws {
