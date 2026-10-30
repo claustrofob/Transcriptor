@@ -68,9 +68,9 @@ public enum OnDeviceTranslationService {
         } catch let error as LanguageModelSession.GenerationError {
             switch error {
             case .unsupportedLanguageOrLocale:
-                throw TranslationError.onDeviceUnavailable("The on-device model doesn't support this language.")
+                throw unsupportedLanguage
             case .exceededContextWindowSize:
-                throw TranslationError.onDeviceUnavailable("The text is too long for the on-device model.")
+                throw textTooLong
             case .guardrailViolation:
                 throw TranslationError.refused(explanation: nil)
             default:
@@ -84,14 +84,17 @@ public enum OnDeviceTranslationService {
         }
     }
 
+    private static let unsupportedLanguage = TranslationError.onDeviceUnavailable("The on-device model doesn't support this language.")
+    private static let textTooLong = TranslationError.onDeviceUnavailable("The text is too long for the on-device model.")
+
     /// iOS 27 reports model errors as `LanguageModelError` (`GenerationError` is deprecated there).
     @available(iOS 27.0, *)
     private static func mapped(_ error: LanguageModelError) -> Error {
         switch error {
         case .unsupportedLanguageOrLocale:
-            TranslationError.onDeviceUnavailable("The on-device model doesn't support this language.")
+            unsupportedLanguage
         case .contextSizeExceeded:
-            TranslationError.onDeviceUnavailable("The text is too long for the on-device model.")
+            textTooLong
         case .guardrailViolation, .refusal:
             TranslationError.refused(explanation: nil)
         case .unsupportedGenerationGuide(let details):

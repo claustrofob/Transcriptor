@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Reusable view that displays translation content: source language badge + normal form + synonyms + translation text + examples,
+/// Reusable view that displays translation content: normal form + synonyms + translation text + examples,
 /// with a button at the top right that copies all of it.
-/// Used in TranslationView, ActionView, and HistoryDetailView.
+/// Used on the Translate screen, in ActionView and in HistoryDetailView.
 public struct TranslationContentView: View {
 
-    private let sourceLanguage: String?
     private let normalForm: String?
     private let synonyms: String?
     private let translatedText: String
@@ -15,31 +14,16 @@ public struct TranslationContentView: View {
         normalForm: String? = nil,
         synonyms: String? = nil,
         translatedText: String,
-        sourceLanguage: String? = nil,
         examples: [TranslationExample] = []
     ) {
-        self.sourceLanguage = sourceLanguage
         self.normalForm = normalForm
         self.synonyms = synonyms
         self.translatedText = translatedText
         self.examples = examples
     }
 
-    /// Initialize from a persisted TranslationResult.
-    public init(result: TranslationResult) {
-        self.sourceLanguage = result.sourceLanguage
-        self.normalForm = result.normalForm
-        self.synonyms = result.synonyms
-        self.translatedText = result.translatedText
-        self.examples = result.examples
-    }
-
     public var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let sourceLanguage {
-                LanguageBadge(sourceLanguage)
-            }
-
             // The copy button sits at the top right, next to the first block of the result.
             HStack(alignment: .top, spacing: 12) {
                 if let normalForm = normalForm.nonEmpty {
@@ -49,15 +33,12 @@ public struct TranslationContentView: View {
                 }
 
                 CopyTranslationButton(copyText)
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
             }
 
             if normalForm.nonEmpty != nil {
                 translationText
             }
 
-            // Examples
             if !examples.isEmpty {
                 Divider()
                 ExamplesView(examples)
@@ -100,13 +81,5 @@ public struct TranslationContentView: View {
             blocks.append(examples.map { "• \($0.original) — \($0.translation)" }.joined(separator: "\n"))
         }
         return blocks.joined(separator: "\n\n")
-    }
-}
-
-private extension Optional where Wrapped == String {
-    /// `nil` for a missing or empty string.
-    var nonEmpty: String? {
-        guard let self, !self.isEmpty else { return nil }
-        return self
     }
 }

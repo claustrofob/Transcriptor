@@ -39,14 +39,12 @@ public final class LanguageFrequencyStore: @unchecked Sendable {
     public static let shared = LanguageFrequencyStore()
 
     private let defaults: UserDefaults
-    /// Earlier versions tracked source languages under "sourceLanguageFrequencyV2"; that data is ignored.
     static let storageKey = "targetLanguageFrequency"
-    private let key = storageKey
     private let maxPreferred = 4
     private let windowDays = 30
 
-    private init() {
-        self.defaults = UserDefaults(suiteName: AppConstants.appGroupID) ?? .standard
+    private convenience init() {
+        self.init(defaults: UserDefaults(suiteName: AppConstants.appGroupID) ?? .standard)
     }
 
     /// Initializer for testing — injects a custom UserDefaults instance.
@@ -54,39 +52,27 @@ public final class LanguageFrequencyStore: @unchecked Sendable {
         self.defaults = defaults
     }
 
-    /// Exposes the underlying UserDefaults for test assertions.
-    var testDefaults: UserDefaults { defaults }
-
     /// Records a usage event for the given ISO language code.
     /// Old entries outside the 30-day window are pruned on each write.
     public func record(code: String) {
         var data = load()
-        let today = dateKey(for: .now)
-        data[code, default: [:]][today, default: 0] += 1
+        data[code, default: [:]][Self.dateKey(for: .now), default: 0] += 1
 
-        let cutoff = dateKey(daysAgo: windowDays)
-        for langCode in data.keys {
-            data[langCode] = data[langCode]?.filter { $0.key > cutoff }
-            if data[langCode]?.isEmpty == true { data.removeValue(forKey: langCode) }
-        }
+        let cutoff = cutoffKey
+        data = data
+            .mapValues { $0.filter { $0.key > cutoff } }
+            .filter { !$0.value.isEmpty }
 
-        defaults.set(data, forKey: key)
+        defaults.set(data, forKey: Self.storageKey)
     }
 
-    /// Up to 4 most-used languages over the last 30 days, sorted by frequency descending.
-    public var preferred: [TranslationSettings.SourceLanguage] {
-        let data = load()
-        let cutoff = dateKey(daysAgo: windowDays)
-
-        var totals: [String: Int] = [:]
-        for (code, dayCounts) in data {
-            let sum = dayCounts.filter { $0.key > cutoff }.values.reduce(0, +)
-            if sum > 0 { totals[code] = sum }
-        }
-
-        return TranslationSettings.sourceLanguages
-            .filter { totals[$0.code, default: 0] > 0 }
-            .sorted { totals[$0.code, default: 0] > totals[$1.code, default: 0] }
+    /// Codes of up to 4 most-used target languages over the last 30 days, most used first.
+    public var preferred: [String] {
+        let cutoff = cutoffKey
+        let totals = load().mapValues { $0.filter { $0.key > cutoff }.values.reduce(0, +) }
+        return TranslationSettings.supportedLanguages
+            .filter { totals[$0, default: 0] > 0 }
+            .sorted { totals[$0, default: 0] > totals[$1, default: 0] }
             .prefix(maxPreferred)
             .map { $0 }
     }
@@ -94,17 +80,15 @@ public final class LanguageFrequencyStore: @unchecked Sendable {
     // MARK: - Helpers
 
     /// "YYYY-MM-DD" string for a given date — lexicographic order matches chronological order.
-    private func dateKey(for date: Date) -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    static func dateKey(for date: Date) -> String {
+        date.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
     }
 
-    private func dateKey(daysAgo days: Int) -> String {
-        let date = Calendar.current.date(byAdding: .day, value: -days, to: .now) ?? .now
-        return dateKey(for: date)
+    private var cutoffKey: String {
+        Self.dateKey(for: Calendar.current.date(byAdding: .day, value: -windowDays, to: .now) ?? .now)
     }
 
     private func load() -> [String: [String: Int]] {
-        defaults.dictionary(forKey: key) as? [String: [String: Int]] ?? [:]
+        defaults.dictionary(forKey: Self.storageKey) as? [String: [String: Int]] ?? [:]
     }
 }

@@ -63,39 +63,20 @@ class ActionViewController: UIViewController {
 
     // MARK: - Text extraction
 
+    /// The first shared plain text, or else the first shared URL as a string.
     private func extractText() async -> String? {
-        guard let inputItems = extensionContext?.inputItems as? [NSExtensionItem] else {
-            return nil
-        }
+        let providers = (extensionContext?.inputItems as? [NSExtensionItem] ?? [])
+            .flatMap { $0.attachments ?? [] }
 
-        for item in inputItems {
-            guard let attachments = item.attachments else { continue }
-
-            for provider in attachments {
-                if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
-                    do {
-                        let result = try await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier)
-                        if let text = result as? String {
-                            return text
-                        }
-                    } catch {
-                        continue
-                    }
-                }
-
-                if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-                    do {
-                        let result = try await provider.loadItem(forTypeIdentifier: UTType.url.identifier)
-                        if let url = result as? URL {
-                            return url.absoluteString
-                        }
-                    } catch {
-                        continue
-                    }
+        for provider in providers {
+            for type in [UTType.plainText, .url] where provider.hasItemConformingToTypeIdentifier(type.identifier) {
+                switch try? await provider.loadItem(forTypeIdentifier: type.identifier) {
+                case let text as String: return text
+                case let url as URL: return url.absoluteString
+                default: continue
                 }
             }
         }
-
         return nil
     }
 }

@@ -17,25 +17,14 @@ public final class TranslationResult {
     /// Time the provider took to respond, in seconds. Nil for records saved before it was tracked.
     public var responseDuration: TimeInterval?
 
-    /// Typed access to translation type. Old records with nil default to `.word`.
+    /// Typed access to the stored translation type; `.word` if it's unknown.
     public var classifiedType: TranslationType {
-        get {
-            translationType.flatMap { TranslationType(rawValue: $0) } ?? .word
-        }
-        set {
-            translationType = newValue.rawValue
-        }
-    }
-
-    /// English name of the source language ("Polish") from the stored code (or legacy
-    /// "Польский (pl)" string); `nil` if it wasn't detected.
-    public var sourceLanguageName: String? {
-        sourceLanguage.map(TranslationSettings.languageName(fromModelString:))
+        translationType.flatMap(TranslationType.init(rawValue:)) ?? .word
     }
 
     /// Source language name for display, in the user's language ("Польский").
     public var sourceLanguageDisplayName: String? {
-        sourceLanguage.map(TranslationSettings.displayName(fromModelString:))
+        sourceLanguage.map(TranslationSettings.displayName(forCode:))
     }
 
     /// Target language name for display, in the user's language ("Русский").

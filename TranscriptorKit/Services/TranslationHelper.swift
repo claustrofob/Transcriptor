@@ -8,7 +8,6 @@ public struct TranslationOutput: Sendable {
     public let normalForm: String?
     public let synonyms: String?
     public let examples: [TranslationExample]
-    public let translationType: TranslationType
     /// Set when the on-device model translated instead of the selected provider.
     public let fallbackReason: FallbackReason?
     /// The history entry saved for this translation.
@@ -59,6 +58,8 @@ public enum TranslationHelper {
         }
 
         let classification = textType(of: meta)
+        // Models sometimes add whitespace or capitals to the ISO code.
+        let sourceLanguage = meta.sourceLanguage.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         // Free text has no dictionary fields; the cloud schema still returns them as empty values.
         let isFreeText = classification == .freeText
         let normalFormValue = isFreeText ? nil : meta.normalForm.nonEmpty
@@ -72,23 +73,22 @@ public enum TranslationHelper {
             normalForm: normalFormValue,
             synonyms: synonymsValue,
             shortTranslation: shortTranslationValue,
-            sourceLanguage: meta.sourceLanguage,
+            sourceLanguage: sourceLanguage,
             targetLanguage: settings.targetLanguage,
             model: modelID,
             examples: examplesValue,
             translationType: classification,
-            responseDuration: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+            responseDuration: elapsed / .seconds(1)
         )
         modelContext.insert(result)
         try? modelContext.save()
 
         return TranslationOutput(
             translatedText: meta.translatedText,
-            sourceLanguage: meta.sourceLanguage,
+            sourceLanguage: sourceLanguage,
             normalForm: normalFormValue,
             synonyms: synonymsValue,
             examples: examplesValue,
-            translationType: classification,
             fallbackReason: fallbackReason,
             // Read after saving: the ID of an unsaved model is temporary.
             historyID: result.persistentModelID
@@ -105,13 +105,13 @@ public enum TranslationHelper {
         do {
             let meta = switch settings.provider {
             case .google:
-                try await GeminiService.shared.translateFull(
+                try await GeminiService.translateFull(
                     text: text,
                     settings: settings,
                     sourceLanguage: sourceLanguage
                 )
             case .anthropic:
-                try await ClaudeService.shared.translateFull(
+                try await ClaudeService.translateFull(
                     text: text,
                     settings: settings,
                     sourceLanguage: sourceLanguage
@@ -165,13 +165,5 @@ public enum TranslationHelper {
             return .network
         }
         return nil
-    }
-}
-
-private extension Optional where Wrapped == String {
-    /// `nil` for a missing or empty string.
-    var nonEmpty: String? {
-        guard let self, !self.isEmpty else { return nil }
-        return self
     }
 }

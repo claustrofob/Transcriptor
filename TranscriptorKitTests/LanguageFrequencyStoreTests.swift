@@ -13,7 +13,7 @@ struct LanguageFrequencyStoreTests {
         let store = makeStore()
         store.record(code: "pl")
         let preferred = store.preferred
-        #expect(preferred.contains { $0.code == "pl" })
+        #expect(preferred.contains { $0 == "pl" })
     }
 
     @Test func recordMultipleTimesIncreasesRank() {
@@ -22,7 +22,7 @@ struct LanguageFrequencyStoreTests {
         store.record(code: "pl")
         store.record(code: "de")
         let preferred = store.preferred
-        #expect(preferred.first?.code == "pl")
+        #expect(preferred.first == "pl")
     }
 
     @Test func emptyStoreReturnsEmpty() {
@@ -39,7 +39,7 @@ struct LanguageFrequencyStoreTests {
         store.record(code: "de")
         store.record(code: "de")
         let preferred = store.preferred
-        #expect(preferred.first?.code == "de")
+        #expect(preferred.first == "de")
     }
 
     @Test func returnsAtMostFourLanguages() {
@@ -53,18 +53,17 @@ struct LanguageFrequencyStoreTests {
         store.record(code: "xx") // Unknown code
         store.record(code: "pl") // Known
         let preferred = store.preferred
-        // "xx" has no matching SourceLanguage — must not appear
-        #expect(!preferred.contains { $0.code == "xx" })
-        #expect(preferred.contains { $0.code == "pl" })
+        // "xx" isn't a supported target language — must not appear
+        #expect(!preferred.contains { $0 == "xx" })
+        #expect(preferred.contains { $0 == "pl" })
     }
 
     // MARK: - 30-day rolling window
 
     @Test func oldEntriesAreExcludedFromPreferred() {
-        let store = makeStore()
-        // Inject a usage entry dated 31 days ago directly via record + override
-        // We test the boundary by inserting data manually into UserDefaults
-        let defaults = store.testDefaults
+        let defaults = makeFreshDefaults()
+        let store = LanguageFrequencyStore(defaults: defaults)
+        // Insert a usage entry dated 31 days ago directly into UserDefaults
         let key = LanguageFrequencyStore.storageKey
 
         let oldDate = Calendar.current.date(byAdding: .day, value: -31, to: .now)!
@@ -73,18 +72,18 @@ struct LanguageFrequencyStoreTests {
         defaults.set(data, forKey: key)
 
         // preferred must exclude entries older than 30 days
-        #expect(!store.preferred.contains { $0.code == "pl" })
+        #expect(!store.preferred.contains { $0 == "pl" })
     }
 
     @Test func entryFromTodayIsIncluded() {
         let store = makeStore()
         store.record(code: "es")
-        #expect(store.preferred.contains { $0.code == "es" })
+        #expect(store.preferred.contains { $0 == "es" })
     }
 
     @Test func entryFromExactly30DaysAgoIsExcluded() {
-        let store = makeStore()
-        let defaults = store.testDefaults
+        let defaults = makeFreshDefaults()
+        let store = LanguageFrequencyStore(defaults: defaults)
         let key = LanguageFrequencyStore.storageKey
 
         let boundary = Calendar.current.date(byAdding: .day, value: -30, to: .now)!
@@ -93,14 +92,14 @@ struct LanguageFrequencyStoreTests {
         defaults.set(data, forKey: key)
 
         // Cutoff is `> cutoff`, so exactly -30 days is excluded
-        #expect(!store.preferred.contains { $0.code == "de" })
+        #expect(!store.preferred.contains { $0 == "de" })
     }
 
     // MARK: - Pruning on write
 
     @Test func recordPrunesOldEntries() {
-        let store = makeStore()
-        let defaults = store.testDefaults
+        let defaults = makeFreshDefaults()
+        let store = LanguageFrequencyStore(defaults: defaults)
         let key = LanguageFrequencyStore.storageKey
 
         let staleDate = Calendar.current.date(byAdding: .day, value: -35, to: .now)!
@@ -131,5 +130,10 @@ struct LanguageFrequencyStoreTests {
     private func dateString(for date: Date) -> String {
         let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    @Test func dateKeyIsLocalYearMonthDay() {
+        let date = Calendar.current.date(from: DateComponents(year: 2026, month: 3, day: 7, hour: 23, minute: 30))!
+        #expect(LanguageFrequencyStore.dateKey(for: date) == "2026-03-07")
     }
 }

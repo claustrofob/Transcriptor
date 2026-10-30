@@ -7,76 +7,52 @@ public final class KeychainService: Sendable {
 
     private init() {}
 
-    // MARK: - Save
-
     public func saveAPIKey(_ key: String, for provider: TranslationSettings.Provider) throws {
+        let query = baseQuery(for: provider)
         let data = Data(key.utf8)
 
-        // Try to update first
-        let updateQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName(for: provider),
-            kSecAttrAccessGroup as String: AppConstants.keychainAccessGroup,
-        ]
+        let updateStatus = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
+        guard updateStatus == errSecItemNotFound else {
+            guard updateStatus == errSecSuccess else { throw KeychainError.unableToSave(status: updateStatus) }
+            return
+        }
 
-        let updateAttributes: [String: Any] = [
-            kSecValueData as String: data,
-        ]
-
-        let updateStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttributes as CFDictionary)
-
-        if updateStatus == errSecItemNotFound {
-            // Item doesn't exist, add it
-            var addQuery = updateQuery
-            addQuery[kSecValueData as String] = data
-            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-
-            let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
-            guard addStatus == errSecSuccess else {
-                throw KeychainError.unableToSave(status: addStatus)
-            }
-        } else if updateStatus != errSecSuccess {
-            throw KeychainError.unableToSave(status: updateStatus)
+        var addQuery = query
+        addQuery[kSecValueData] = data
+        addQuery[kSecAttrAccessible] = kSecAttrAccessibleAfterFirstUnlock
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        guard addStatus == errSecSuccess else {
+            throw KeychainError.unableToSave(status: addStatus)
         }
     }
-
-    // MARK: - Load
 
     public func loadAPIKey(for provider: TranslationSettings.Provider) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName(for: provider),
-            kSecAttrAccessGroup as String: AppConstants.keychainAccessGroup,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
+        var query = baseQuery(for: provider)
+        query[kSecReturnData] = true
+        query[kSecMatchLimit] = kSecMatchLimitOne
 
         var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        guard status == errSecSuccess, let data = result as? Data else {
-            return nil
-        }
-
-        return String(data: data, encoding: .utf8)
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data
+        else { return nil }
+        return String(decoding: data, as: UTF8.self)
     }
 
-    // MARK: - Delete
-
     public func deleteAPIKey(for provider: TranslationSettings.Provider) throws {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: serviceName(for: provider),
-            kSecAttrAccessGroup as String: AppConstants.keychainAccessGroup,
-        ]
-
-        let status = SecItemDelete(query as CFDictionary)
+        let status = SecItemDelete(baseQuery(for: provider) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError.unableToDelete(status: status)
         }
     }
 
-    // MARK: - Helpers
+    /// The provider's key item in the shared access group.
+    private func baseQuery(for provider: TranslationSettings.Provider) -> [CFString: Any] {
+        [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: serviceName(for: provider),
+            kSecAttrAccessGroup: AppConstants.keychainAccessGroup,
+        ]
+    }
 
     /// Google keeps the original service name so keys saved before multi-provider support are still found.
     private func serviceName(for provider: TranslationSettings.Provider) -> String {
@@ -87,8 +63,6 @@ public final class KeychainService: Sendable {
         }
     }
 }
-
-// MARK: - Errors
 
 public enum KeychainError: LocalizedError {
     case unableToSave(status: OSStatus)

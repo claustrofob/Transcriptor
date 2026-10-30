@@ -4,17 +4,13 @@ import Foundation
 /// Written in Gemini's dialect (uppercase types); use `JSONSchema.standardized()` for standard JSON Schema.
 public enum TranslationSchema {
 
-    /// One schema for every input: the model reports the class in "textType" and leaves the
-    /// dictionary fields empty for free text.
-    public static func schema(lang: String) -> JSONSchema {
-        fullSchema(lang: lang)
-    }
-
     private static let generationOrder = [
         "textType", "sourceLanguage", "normalForm", "synonyms", "translatedText", "shortTranslation", "examples",
     ]
 
-    private static func fullSchema(lang: String) -> JSONSchema {
+    /// One schema for every input: the model reports the class in "textType" and leaves the
+    /// dictionary fields empty for free text.
+    public static func schema(lang: String) -> JSONSchema {
         let exampleSchema = JSONSchema(
             type: "OBJECT",
             properties: [

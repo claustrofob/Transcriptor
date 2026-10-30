@@ -1,38 +1,18 @@
 import SwiftUI
 
-/// Reusable copy button with "Copied!" feedback animation.
-/// Used in TranslationView, ActionView, and HistoryDetailView.
+/// Icon-only copy button that turns into a green checkmark ("Copied!") for a moment.
+/// Used at the top right of `TranslationContentView`.
 public struct CopyTranslationButton: View {
 
     private let text: String
-    private let label: String
-    private let fullWidth: Bool
 
     @State private var copied = false
 
-    /// - Parameters:
-    ///   - text: The text to copy to clipboard.
-    ///   - label: Button label when not copied (default "Copy").
-    ///   - fullWidth: Use full-width bordered style (default false, for toolbar use).
-    public init(_ text: String, label: String = "Copy", fullWidth: Bool = false) {
+    public init(_ text: String) {
         self.text = text
-        self.label = label
-        self.fullWidth = fullWidth
     }
 
     public var body: some View {
-        if fullWidth {
-            button
-                .buttonStyle(.bordered)
-                .tint(copied ? .green : nil)
-        } else {
-            // Neutral like the surrounding text; green while showing "Copied!".
-            button
-                .tint(copied ? .green : .secondary)
-        }
-    }
-
-    private var button: some View {
         Button {
             UIPasteboard.general.string = text
             withAnimation { copied = true }
@@ -41,15 +21,14 @@ public struct CopyTranslationButton: View {
                 withAnimation { copied = false }
             }
         } label: {
-            Label(
-                copied ? "Copied!" : label,
-                systemImage: copied ? "checkmark" : "doc.on.doc"
-            )
-            // SF Symbols' Magic Replace morphs the copy icon into the checkmark and back.
-            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
-            .frame(maxWidth: fullWidth ? .infinity : nil)
-            .padding(.vertical, fullWidth ? 12 : 0)
+            Label(copied ? "Copied!" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                // SF Symbols' Magic Replace morphs the copy icon into the checkmark and back.
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp.byLayer)))
         }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        // Neutral like the surrounding text; green while showing "Copied!".
+        .tint(copied ? .green : .secondary)
         .disabled(text.isEmpty)
     }
 }

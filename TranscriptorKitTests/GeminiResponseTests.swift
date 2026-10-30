@@ -18,41 +18,41 @@ struct GeminiResponseTests {
     }
 
     @Test func nilWhenNoCandidates() {
-        let response = GeminiResponse(candidates: nil, usageMetadata: nil)
+        let response = GeminiResponse(candidates: nil)
         #expect(response.text == nil)
     }
 
     @Test func nilWhenEmptyCandidates() {
-        let response = GeminiResponse(candidates: [], usageMetadata: nil)
+        let response = GeminiResponse(candidates: [])
         #expect(response.text == nil)
     }
 
     @Test func nilWhenCandidateHasNoContent() {
-        let candidate = GeminiResponse.Candidate(content: nil, finishReason: nil)
-        let response = GeminiResponse(candidates: [candidate], usageMetadata: nil)
+        let candidate = GeminiResponse.Candidate(content: nil)
+        let response = GeminiResponse(candidates: [candidate])
         #expect(response.text == nil)
     }
 
     @Test func nilWhenContentHasNoParts() {
-        let content = GeminiResponse.ContentResponse(parts: nil, role: "model")
-        let candidate = GeminiResponse.Candidate(content: content, finishReason: nil)
-        let response = GeminiResponse(candidates: [candidate], usageMetadata: nil)
+        let content = GeminiResponse.ContentResponse(parts: nil)
+        let candidate = GeminiResponse.Candidate(content: content)
+        let response = GeminiResponse(candidates: [candidate])
         #expect(response.text == nil)
     }
 
     @Test func emptyStringWhenPartsHaveNilText() {
         // compactMap filters nil texts → [], joined() → ""; result is "" not nil
         let parts = [GeminiResponse.PartResponse(text: nil)]
-        let content = GeminiResponse.ContentResponse(parts: parts, role: "model")
-        let candidate = GeminiResponse.Candidate(content: content, finishReason: nil)
-        let response = GeminiResponse(candidates: [candidate], usageMetadata: nil)
+        let content = GeminiResponse.ContentResponse(parts: parts)
+        let candidate = GeminiResponse.Candidate(content: content)
+        let response = GeminiResponse(candidates: [candidate])
         #expect(response.text == "")
     }
 
     @Test func usesFirstCandidateOnly() {
         let first = makeCandidate(text: "first")
         let second = makeCandidate(text: "second")
-        let response = GeminiResponse(candidates: [first, second], usageMetadata: nil)
+        let response = GeminiResponse(candidates: [first, second])
         #expect(response.text == "first")
     }
 
@@ -85,17 +85,14 @@ struct GeminiResponseTests {
             }
         }
         """
-        let data = Data(json.utf8)
-        let error = try JSONDecoder().decode(GeminiErrorResponse.self, from: data)
-        #expect(error.error.code == 403)
+        let error = try JSONDecoder().decode(APIErrorResponse.self, from: Data(json.utf8))
         #expect(error.error.message == "API key not valid.")
-        #expect(error.error.status == "PERMISSION_DENIED")
     }
 
     // MARK: - Helpers
 
     private func makeResponse(parts: [String]) -> GeminiResponse {
-        GeminiResponse(candidates: [makeCandidate(parts: parts)], usageMetadata: nil)
+        GeminiResponse(candidates: [makeCandidate(parts: parts)])
     }
 
     private func makeCandidate(text: String) -> GeminiResponse.Candidate {
@@ -104,7 +101,7 @@ struct GeminiResponseTests {
 
     private func makeCandidate(parts: [String]) -> GeminiResponse.Candidate {
         let responseParts = parts.map { GeminiResponse.PartResponse(text: $0) }
-        let content = GeminiResponse.ContentResponse(parts: responseParts, role: "model")
-        return GeminiResponse.Candidate(content: content, finishReason: "STOP")
+        let content = GeminiResponse.ContentResponse(parts: responseParts)
+        return GeminiResponse.Candidate(content: content)
     }
 }

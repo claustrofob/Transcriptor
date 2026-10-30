@@ -6,17 +6,11 @@ public enum HistoryStore {
     public static func makeContainer() throws -> ModelContainer {
         let schema = Schema([TranslationResult.self])
 
-        let storeURL: URL
-        if let groupURL = FileManager.default.containerURL(
+        // Outside the App Group (previews, tests) the store goes to Application Support.
+        let directory = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: AppConstants.appGroupID
-        ) {
-            storeURL = groupURL.appendingPathComponent("TranslationHistory.sqlite")
-        } else {
-            // Fallback for previews / testing
-            storeURL = URL.applicationSupportDirectory.appendingPathComponent("TranslationHistory.sqlite")
-        }
-
-        let configuration = ModelConfiguration(url: storeURL)
+        ) ?? .applicationSupportDirectory
+        let configuration = ModelConfiguration(url: directory.appending(path: "TranslationHistory.sqlite"))
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 }

@@ -182,44 +182,8 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         englishLocale.localizedString(forLanguageCode: code) ?? code
     }
 
-    /// Display name for the model's `sourceLanguage` value (see `languageName(fromModelString:)`).
-    public static func displayName(fromModelString string: String) -> String {
-        languageCode(fromModelString: string).map(displayName(forCode:)) ?? string
-    }
-
-    /// Finds the SourceLanguage for the model's `sourceLanguage` value: an ISO 639-1 code ("pl"),
-    /// or the legacy "Польский (pl)" format still stored in older history entries.
-    public static func sourceLanguage(fromModelString string: String) -> SourceLanguage? {
-        guard let code = languageCode(fromModelString: string) else { return nil }
-        return sourceLanguages.first { $0.code == code }
-    }
-
-    /// English display name for the model's `sourceLanguage` value: the name from `sourceLanguages`,
-    /// else the system's English name for the code, else the string as is.
-    public static func languageName(fromModelString string: String) -> String {
-        if let language = sourceLanguage(fromModelString: string) {
-            return language.name
-        }
-        if let code = languageCode(fromModelString: string),
-           let name = englishLocale.localizedString(forLanguageCode: code) {
-            return name
-        }
-        return string
-    }
-
-    private static func languageCode(fromModelString string: String) -> String? {
-        let code: String
-        if let openParen = string.lastIndex(of: "("),
-           let closeParen = string.lastIndex(of: ")"),
-           openParen < closeParen {
-            // Legacy format: the code is in the trailing "(xx)".
-            code = String(string[string.index(after: openParen)..<closeParen])
-        } else if string.contains("(") || string.contains(")") {
-            return nil
-        } else {
-            code = string
-        }
-        let trimmed = code.trimmingCharacters(in: .whitespaces).lowercased()
-        return trimmed.isEmpty ? nil : trimmed
+    /// The source language with ISO 639 `code`; `nil` if it isn't in `sourceLanguages`.
+    public static func sourceLanguage(forCode code: String) -> SourceLanguage? {
+        sourceLanguages.first { $0.code == code }
     }
 }

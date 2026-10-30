@@ -79,7 +79,7 @@ public struct TranslationResultView: View {
                 SourceLanguagePicker(
                     selected: session.selectedSourceLanguage,
                     // Nothing detected (e.g. the request failed): keep showing "Auto-detect" instead of "Unknown".
-                    fallbackLabel: session.sourceLanguage.map(TranslationSettings.displayName(fromModelString:)) ?? "Auto-detect",
+                    fallbackLabel: session.sourceLanguage.map(TranslationSettings.displayName(forCode:)) ?? "Auto-detect",
                     isDisabled: session.isTranslating
                 ) { lang in
                     session.selectSourceLanguage(lang, modelContext: modelContext)
@@ -91,7 +91,8 @@ public struct TranslationResultView: View {
         } target: {
             let current = session.targetLanguage
             Menu {
-                let preferred = preferredTargetLanguages
+                // Most-used target languages over the last 30 days, above the full list.
+                let preferred = LanguageFrequencyStore.shared.preferred
                 if !preferred.isEmpty {
                     ForEach(preferred, id: \.self) { targetLanguageItem($0, current: current) }
                     Divider()
@@ -106,13 +107,6 @@ public struct TranslationResultView: View {
 }
 
 private extension TranslationResultView {
-    /// Most-used target languages over the last 30 days, shown above the full list.
-    var preferredTargetLanguages: [String] {
-        LanguageFrequencyStore.shared.preferred
-            .map(\.code)
-            .filter(TranslationSettings.supportedLanguages.contains)
-    }
-
     /// A Toggle renders as a menu item with the system checkmark column; a Picker can't be used
     /// because preferred languages appear in the menu twice.
     func targetLanguageItem(_ language: String, current: String) -> some View {
@@ -170,21 +164,18 @@ public struct OriginalTextBox: View {
     }
 }
 
-/// Group box showing an error (with an optional Retry button), a loading indicator, or the content.
+/// Group box showing an error (with an optional Retry button) or the content.
 public struct TranslationBox<Content: View>: View {
     private let error: String?
-    private let isLoading: Bool
     private let onRetry: (() -> Void)?
     private let content: Content
 
     public init(
         error: String? = nil,
-        isLoading: Bool = false,
         onRetry: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.error = error
-        self.isLoading = isLoading
         self.onRetry = onRetry
         self.content = content()
     }
@@ -202,14 +193,6 @@ public struct TranslationBox<Content: View>: View {
                             .controlSize(.small)
                     }
                 }
-            } else if isLoading {
-                HStack {
-                    ProgressView()
-                    Text("Translating...")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 8)
             } else {
                 content
             }

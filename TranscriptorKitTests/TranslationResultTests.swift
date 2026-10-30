@@ -5,28 +5,16 @@ import Foundation
 @Suite("TranslationResult")
 struct TranslationResultTests {
 
-    // MARK: - sourceLanguageName
+    // MARK: - display names
 
-    @Test func sourceLanguageNameFromCode() {
+    @Test func sourceLanguageDisplayNameFromCode() {
         let result = makeResult()
         result.sourceLanguage = "pl"
-        #expect(result.sourceLanguageName == "Polish")
+        #expect(result.sourceLanguageDisplayName == TranslationSettings.displayName(forCode: "pl"))
     }
 
-    @Test func sourceLanguageNameFromLegacyFormat() {
-        let result = makeResult()
-        result.sourceLanguage = "Польский (pl)"
-        #expect(result.sourceLanguageName == "Polish")
-    }
-
-    @Test func sourceLanguageNameFallsBackToRawString() {
-        let result = makeResult()
-        result.sourceLanguage = "Klingon"
-        #expect(result.sourceLanguageName == "Klingon")
-    }
-
-    @Test func sourceLanguageNameIsNilWhenNotDetected() {
-        #expect(makeResult().sourceLanguageName == nil)
+    @Test func sourceLanguageDisplayNameIsNilWhenNotDetected() {
+        #expect(makeResult().sourceLanguageDisplayName == nil)
     }
 
     // MARK: - responseDuration
@@ -82,25 +70,11 @@ struct TranslationResultTests {
         #expect(result.classifiedType == .word)
     }
 
-    @Test func classifiedTypeWordRoundTrip() {
-        let result = makeResult()
-        result.classifiedType = .word
-        #expect(result.translationType == "word")
-        #expect(result.classifiedType == .word)
-    }
-
-    @Test func classifiedTypeExpressionRoundTrip() {
-        let result = makeResult()
-        result.classifiedType = .expression
-        #expect(result.translationType == "expression")
-        #expect(result.classifiedType == .expression)
-    }
-
-    @Test func classifiedTypeFreeTextRoundTrip() {
-        let result = makeResult()
-        result.classifiedType = .freeText
-        #expect(result.translationType == "freeText")
-        #expect(result.classifiedType == .freeText)
+    @Test(arguments: TranslationType.allCases)
+    func classifiedTypeIsStored(type: TranslationType) {
+        let result = TranslationResult(sourceText: "a", translatedText: "b", targetLanguage: "ru", model: "m", translationType: type)
+        #expect(result.translationType == type.rawValue)
+        #expect(result.classifiedType == type)
     }
 
     @Test func unknownRawValueDefaultsToWord() {

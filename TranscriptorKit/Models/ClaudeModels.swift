@@ -80,7 +80,6 @@ public struct ClaudeResponse: Decodable, Sendable {
 
     /// Populated only when `stopReason == "refusal"`.
     public struct StopDetails: Decodable, Sendable {
-        public let category: String?
         public let explanation: String?
     }
 
@@ -93,16 +92,5 @@ public struct ClaudeResponse: Decodable, Sendable {
     /// Concatenated text of all `text` blocks.
     public var text: String {
         content.filter { $0.type == "text" }.compactMap(\.text).joined()
-    }
-}
-
-// MARK: - Error response
-
-public struct ClaudeErrorResponse: Decodable, Sendable {
-    public let error: ClaudeError
-
-    public struct ClaudeError: Decodable, Sendable {
-        public let type: String
-        public let message: String
     }
 }

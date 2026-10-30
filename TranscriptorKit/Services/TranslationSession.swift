@@ -16,7 +16,7 @@ public final class TranslationSession {
     public private(set) var targetLanguage = SettingsManager.shared.settings.targetLanguage
 
     public private(set) var translatedText = ""
-    /// Source language as returned by the model: an ISO 639-1 code, e.g. "pl".
+    /// Source language detected by the model: an ISO 639-1 code, e.g. "pl".
     public private(set) var sourceLanguage: String?
     /// Detected or user-chosen source language; passed as an override on re-translation.
     public private(set) var selectedSourceLanguage: TranslationSettings.SourceLanguage?
@@ -186,7 +186,7 @@ public final class TranslationSession {
             sourceLanguage = output.sourceLanguage
             LanguageFrequencyStore.shared.record(code: targetLanguage)
             if lang == nil {
-                selectedSourceLanguage = TranslationSettings.sourceLanguage(fromModelString: output.sourceLanguage)
+                selectedSourceLanguage = TranslationSettings.sourceLanguage(forCode: output.sourceLanguage)
                 // The detected language becomes part of the request: picking it again changes nothing.
                 lastParameters?.sourceLanguageCode = selectedSourceLanguage?.code
             }

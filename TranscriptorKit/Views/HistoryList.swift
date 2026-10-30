@@ -98,7 +98,7 @@ private struct HistoryRow: View {
                 .lineLimit(1)
                 .font(.headline)
 
-            Text(result.shortTranslation ?? result.translatedText.strippingMarkdown)
+            Text(result.shortTranslation ?? result.translatedText)
                 .lineLimit(1)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -153,12 +153,11 @@ struct HistoryDetailView: View {
                 .padding(.vertical, 7)
 
                 TranslationBox {
-                    // Source language is shown in the language pair instead of a badge.
+                    // Source language is shown in the language pair above.
                     TranslationContentView(
                         normalForm: result.normalForm,
                         synonyms: result.synonyms,
                         translatedText: result.translatedText,
-                        sourceLanguage: nil,
                         examples: result.examples
                     )
                 }
@@ -166,10 +165,7 @@ struct HistoryDetailView: View {
                 HStack {
                     Label(result.model, systemImage: "cpu")
                     Spacer()
-                    // Records saved before the type was stored have none; don't show the `.word` default for them.
-                    if result.translationType != nil {
-                        Label(result.classifiedType.displayName, systemImage: "textformat")
-                    }
+                    Label(result.classifiedType.displayName, systemImage: "textformat")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
