@@ -43,11 +43,11 @@ struct PromptBuilderTests {
     // MARK: - Target language injection
 
     @Test func targetLanguageAppearsInPrompt() {
-        #expect(makePrompt(language: "Spanish").contains("Spanish"))
+        #expect(makePrompt(language: "es").contains("Spanish"))
     }
 
     @Test func plainTargetLanguageAppearsInPrompt() {
-        #expect(makePlainPrompt(language: "German").contains("German"))
+        #expect(makePlainPrompt(language: "de").contains("German"))
     }
 
     // MARK: - Source language override
@@ -80,11 +80,11 @@ struct PromptBuilderTests {
 
     // MARK: - Helpers
 
-    private func makePrompt(language: String = "Russian", sourceOverride: String? = nil) -> String {
+    private func makePrompt(language: String = "ru", sourceOverride: String? = nil) -> String {
         PromptBuilder.translationPrompt(for: TranslationSettings(targetLanguage: language), sourceLanguageOverride: sourceOverride)
     }
 
-    private func makePlainPrompt(language: String = "Russian", sourceOverride: String? = nil) -> String {
+    private func makePlainPrompt(language: String = "ru", sourceOverride: String? = nil) -> String {
         PromptBuilder.plainTranslationPrompt(for: TranslationSettings(targetLanguage: language), sourceLanguageOverride: sourceOverride)
     }
 }

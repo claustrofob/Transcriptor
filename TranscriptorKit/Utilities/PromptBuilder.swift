@@ -10,7 +10,7 @@ public enum PromptBuilder {
         for settings: TranslationSettings,
         sourceLanguageOverride: String? = nil
     ) -> String {
-        withOverride(sourceLanguageOverride, lang: settings.targetLanguage, classifyingPrompt(lang: settings.targetLanguage))
+        withOverride(sourceLanguageOverride, lang: settings.targetLanguageName, classifyingPrompt(lang: settings.targetLanguageName))
     }
 
     /// On-device prompt: a plain, exact translation of any input, no classification or analysis
@@ -19,7 +19,7 @@ public enum PromptBuilder {
         for settings: TranslationSettings,
         sourceLanguageOverride: String? = nil
     ) -> String {
-        withOverride(sourceLanguageOverride, lang: settings.targetLanguage, plainPrompt(lang: settings.targetLanguage))
+        withOverride(sourceLanguageOverride, lang: settings.targetLanguageName, plainPrompt(lang: settings.targetLanguageName))
     }
 
     private static func withOverride(_ src: String?, lang: String, _ base: String) -> String {

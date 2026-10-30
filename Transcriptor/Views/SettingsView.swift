@@ -89,8 +89,8 @@ struct SettingsView: View {
                     Text(OnDeviceTranslationService.unavailabilityReason ?? "Available")
                         .multilineTextAlignment(.trailing)
                 }
-                if let isSupported = OnDeviceTranslationService.supportsLanguage(settings.targetLanguage) {
-                    LabeledContent(settings.targetLanguage, value: isSupported ? "Supported" : "Not officially supported")
+                if let isSupported = OnDeviceTranslationService.supportsLanguage(code: settings.targetLanguage) {
+                    LabeledContent(TranslationSettings.displayName(forCode: settings.targetLanguage), value: isSupported ? "Supported" : "Not officially supported")
                 }
             }
         } header: {

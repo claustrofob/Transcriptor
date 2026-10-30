@@ -33,6 +33,16 @@ public final class TranslationResult {
         sourceLanguage.map(TranslationSettings.languageName(fromModelString:))
     }
 
+    /// Source language name for display, in the user's language ("Польский").
+    public var sourceLanguageDisplayName: String? {
+        sourceLanguage.map(TranslationSettings.displayName(fromModelString:))
+    }
+
+    /// Target language name for display, in the user's language ("Русский").
+    public var targetLanguageDisplayName: String {
+        TranslationSettings.displayName(forCode: targetLanguage)
+    }
+
     /// Computed property to encode/decode examples as JSON.
     public var examples: [TranslationExample] {
         get {

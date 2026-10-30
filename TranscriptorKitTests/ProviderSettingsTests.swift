@@ -8,12 +8,12 @@ struct ProviderSettingsTests {
     // MARK: - Decoding
 
     @Test func decodesLegacySettingsAsGoogle() throws {
-        let json = #"{"targetLanguage":"Polish","detailLevel":"detailed","model":"gemini-2.5-pro"}"#
+        let json = #"{"targetLanguage":"pl","detailLevel":"detailed","model":"gemini-2.5-pro"}"#
         let settings = try JSONDecoder().decode(TranslationSettings.self, from: Data(json.utf8))
         #expect(settings.provider == .google)
         #expect(settings.geminiModel == .gemini35FlashLite)
         #expect(settings.claudeModel == TranslationSettings.default.claudeModel)
-        #expect(settings.targetLanguage == "Polish")
+        #expect(settings.targetLanguage == "pl")
     }
 
     @Test(arguments: [
@@ -23,14 +23,14 @@ struct ProviderSettingsTests {
         ("gemini-4-argon", .gemini4Argon),
     ])
     func retiredGeminiModelsMoveToReplacements(stored: String, expected: TranslationSettings.GeminiModel) throws {
-        let json = #"{"targetLanguage":"Russian","model":"\#(stored)"}"#
+        let json = #"{"targetLanguage":"ru","model":"\#(stored)"}"#
         let settings = try JSONDecoder().decode(TranslationSettings.self, from: Data(json.utf8))
         #expect(settings.geminiModel == expected)
     }
 
     @Test func roundTripKeepsBothProviderModels() throws {
         let original = TranslationSettings(
-            targetLanguage: "German",
+            targetLanguage: "de",
             provider: .anthropic,
             geminiModel: .gemini35FlashLite,
             claudeModel: .haiku55
@@ -43,7 +43,7 @@ struct ProviderSettingsTests {
     // MARK: - Switching
 
     @Test func switchingProviderKeepsOtherModel() {
-        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini4Argon)
+        var settings = TranslationSettings(targetLanguage: "ru", geminiModel: .gemini4Argon)
         settings.provider = .anthropic
         settings.claudeModel = .sonnet55
         settings.provider = .google
@@ -52,7 +52,7 @@ struct ProviderSettingsTests {
     }
 
     @Test func modelIDFollowsActiveProvider() {
-        var settings = TranslationSettings(targetLanguage: "Russian", geminiModel: .gemini38Flash, claudeModel: .opus55)
+        var settings = TranslationSettings(targetLanguage: "ru", geminiModel: .gemini38Flash, claudeModel: .opus55)
         #expect(settings.modelID == "gemini-3.8-flash")
         settings.provider = .anthropic
         #expect(settings.modelID == "claude-opus-5-5")
@@ -61,13 +61,13 @@ struct ProviderSettingsTests {
     // MARK: - On-device provider
 
     @Test func onDeviceProviderRoundTrips() throws {
-        let original = TranslationSettings(targetLanguage: "Russian", provider: .apple)
+        let original = TranslationSettings(targetLanguage: "ru", provider: .apple)
         let decoded = try JSONDecoder().decode(TranslationSettings.self, from: JSONEncoder().encode(original))
         #expect(decoded.provider == .apple)
     }
 
     @Test func onDeviceProviderNeedsNoKeyAndHasFixedModelID() {
-        let settings = TranslationSettings(targetLanguage: "Russian", provider: .apple)
+        let settings = TranslationSettings(targetLanguage: "ru", provider: .apple)
         #expect(!settings.provider.requiresAPIKey)
         #expect(TranslationSettings.Provider.google.requiresAPIKey)
         #expect(TranslationSettings.Provider.anthropic.requiresAPIKey)

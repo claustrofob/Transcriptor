@@ -2,6 +2,7 @@ import Foundation
 
 public struct TranslationSettings: Codable, Sendable, Equatable {
 
+    /// ISO 639 code of the target language ("ru"); see `targetLanguageName` for the prompt.
     public var targetLanguage: String
     public var provider: Provider
     public var geminiModel: GeminiModel
@@ -33,6 +34,11 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
         geminiModel = try container.decodeIfPresent(String.self, forKey: .geminiModel)
             .map(GeminiModel.init(storedValue:)) ?? fallback.geminiModel
         claudeModel = try container.decodeIfPresent(ClaudeModel.self, forKey: .claudeModel) ?? fallback.claudeModel
+    }
+
+    /// English name of the target language ("Russian"), as the model is asked to translate into it.
+    public var targetLanguageName: String {
+        Self.englishName(forCode: targetLanguage)
     }
 
     /// API model identifier of the active provider.
@@ -120,91 +126,66 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
     }
 
     public static let `default` = TranslationSettings(
-        targetLanguage: "Russian",
+        targetLanguage: "ru",
         provider: .google,
         geminiModel: .gemini35FlashLite,
         claudeModel: .opus55
     )
 
+    /// Target languages: a short curated list of ISO 639 codes.
     public static let supportedLanguages = [
-        "Russian", "English", "Spanish", "French", "German",
-        "Chinese", "Japanese", "Korean", "Portuguese", "Italian",
-        "Arabic", "Hindi", "Turkish", "Dutch", "Polish",
-        "Swedish", "Czech", "Greek", "Hebrew", "Thai"
+        "ru", "en", "es", "fr", "de",
+        "zh", "ja", "ko", "pt", "it",
+        "ar", "hi", "tr", "nl", "pl",
+        "sv", "cs", "el", "he", "th",
     ]
 
     // MARK: - Source Language
 
     public struct SourceLanguage: Identifiable, Equatable, Sendable {
-        public let name: String  // English name
-        public let code: String  // ISO 639-1 / 639-2
+        public let name: String  // English name: stored in settings and sent to the model
+        public let code: String  // ISO 639 code
         public var id: String { code }
+
+        /// Name in the user's preferred language, for display ("Польский").
+        public var displayName: String {
+            TranslationSettings.displayName(forCode: code)
+        }
     }
 
-    public static let sourceLanguages: [SourceLanguage] = [
-        SourceLanguage(name: "Afrikaans", code: "af"),
-        SourceLanguage(name: "Albanian", code: "sq"),
-        SourceLanguage(name: "Arabic", code: "ar"),
-        SourceLanguage(name: "Armenian", code: "hy"),
-        SourceLanguage(name: "Azerbaijani", code: "az"),
-        SourceLanguage(name: "Basque", code: "eu"),
-        SourceLanguage(name: "Belarusian", code: "be"),
-        SourceLanguage(name: "Bengali", code: "bn"),
-        SourceLanguage(name: "Bulgarian", code: "bg"),
-        SourceLanguage(name: "Catalan", code: "ca"),
-        SourceLanguage(name: "Chinese", code: "zh"),
-        SourceLanguage(name: "Croatian", code: "hr"),
-        SourceLanguage(name: "Czech", code: "cs"),
-        SourceLanguage(name: "Danish", code: "da"),
-        SourceLanguage(name: "Dutch", code: "nl"),
-        SourceLanguage(name: "English", code: "en"),
-        SourceLanguage(name: "Estonian", code: "et"),
-        SourceLanguage(name: "Finnish", code: "fi"),
-        SourceLanguage(name: "French", code: "fr"),
-        SourceLanguage(name: "Galician", code: "gl"),
-        SourceLanguage(name: "Georgian", code: "ka"),
-        SourceLanguage(name: "German", code: "de"),
-        SourceLanguage(name: "Greek", code: "el"),
-        SourceLanguage(name: "Gujarati", code: "gu"),
-        SourceLanguage(name: "Hebrew", code: "he"),
-        SourceLanguage(name: "Hindi", code: "hi"),
-        SourceLanguage(name: "Hungarian", code: "hu"),
-        SourceLanguage(name: "Icelandic", code: "is"),
-        SourceLanguage(name: "Indonesian", code: "id"),
-        SourceLanguage(name: "Irish", code: "ga"),
-        SourceLanguage(name: "Italian", code: "it"),
-        SourceLanguage(name: "Japanese", code: "ja"),
-        SourceLanguage(name: "Kannada", code: "kn"),
-        SourceLanguage(name: "Kazakh", code: "kk"),
-        SourceLanguage(name: "Korean", code: "ko"),
-        SourceLanguage(name: "Latvian", code: "lv"),
-        SourceLanguage(name: "Lithuanian", code: "lt"),
-        SourceLanguage(name: "Macedonian", code: "mk"),
-        SourceLanguage(name: "Malay", code: "ms"),
-        SourceLanguage(name: "Maltese", code: "mt"),
-        SourceLanguage(name: "Marathi", code: "mr"),
-        SourceLanguage(name: "Norwegian", code: "no"),
-        SourceLanguage(name: "Persian", code: "fa"),
-        SourceLanguage(name: "Polish", code: "pl"),
-        SourceLanguage(name: "Portuguese", code: "pt"),
-        SourceLanguage(name: "Romanian", code: "ro"),
-        SourceLanguage(name: "Russian", code: "ru"),
-        SourceLanguage(name: "Serbian", code: "sr"),
-        SourceLanguage(name: "Slovak", code: "sk"),
-        SourceLanguage(name: "Slovenian", code: "sl"),
-        SourceLanguage(name: "Spanish", code: "es"),
-        SourceLanguage(name: "Swahili", code: "sw"),
-        SourceLanguage(name: "Swedish", code: "sv"),
-        SourceLanguage(name: "Tamil", code: "ta"),
-        SourceLanguage(name: "Telugu", code: "te"),
-        SourceLanguage(name: "Thai", code: "th"),
-        SourceLanguage(name: "Turkish", code: "tr"),
-        SourceLanguage(name: "Ukrainian", code: "uk"),
-        SourceLanguage(name: "Urdu", code: "ur"),
-        SourceLanguage(name: "Uzbek", code: "uz"),
-        SourceLanguage(name: "Vietnamese", code: "vi"),
-        SourceLanguage(name: "Welsh", code: "cy"),
-    ]
+    /// Every language the system has locale data for, sorted by display name.
+    public static let sourceLanguages: [SourceLanguage] = {
+        let codes = Set(Locale.availableIdentifiers.compactMap { Locale(identifier: $0).language.languageCode?.identifier })
+        return codes
+            .compactMap { code in
+                // No English name means the system doesn't really know the language.
+                guard let name = englishLocale.localizedString(forLanguageCode: code), name != code else { return nil }
+                return SourceLanguage(name: name, code: code)
+            }
+            .sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
+    }()
+
+    private static let englishLocale = Locale(identifier: "en")
+
+    /// Locale for language names in the UI: the user's first preferred language,
+    /// since the app itself is English-only and `Locale.current` would name languages in English.
+    private static let displayLocale = Locale(identifier: Locale.preferredLanguages.first ?? "en")
+
+    /// Display name for an ISO 639 code, capitalized ("pl" → "Польский"); the code itself if unknown.
+    public static func displayName(forCode code: String) -> String {
+        guard let name = displayLocale.localizedString(forLanguageCode: code) else { return code }
+        return name.prefix(1).uppercased(with: displayLocale) + name.dropFirst()
+    }
+
+    /// English name for an ISO 639 code ("pl" → "Polish"); the code itself if unknown.
+    public static func englishName(forCode code: String) -> String {
+        englishLocale.localizedString(forLanguageCode: code) ?? code
+    }
+
+    /// Display name for the model's `sourceLanguage` value (see `languageName(fromModelString:)`).
+    public static func displayName(fromModelString string: String) -> String {
+        languageCode(fromModelString: string).map(displayName(forCode:)) ?? string
+    }
 
     /// Finds the SourceLanguage for the model's `sourceLanguage` value: an ISO 639-1 code ("pl"),
     /// or the legacy "Польский (pl)" format still stored in older history entries.
@@ -220,7 +201,7 @@ public struct TranslationSettings: Codable, Sendable, Equatable {
             return language.name
         }
         if let code = languageCode(fromModelString: string),
-           let name = Locale(identifier: "en").localizedString(forLanguageCode: code) {
+           let name = englishLocale.localizedString(forLanguageCode: code) {
             return name
         }
         return string

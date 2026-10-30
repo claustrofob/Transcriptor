@@ -30,7 +30,7 @@ public actor GeminiService {
 
         let config = GenerationConfig(
             responseMimeType: "application/json",
-            responseSchema: TranslationSchema.schema(lang: settings.targetLanguage)
+            responseSchema: TranslationSchema.schema(lang: settings.targetLanguageName)
         )
 
         let body = GeminiRequest(

@@ -43,12 +43,12 @@ public struct SourceLanguagePicker<ButtonLabel: View>: View {
     }
 
     private var displayLabel: String {
-        selected?.name ?? fallbackLabel ?? "Unknown"
+        selected?.displayName ?? fallbackLabel ?? "Unknown"
     }
 
     /// A Toggle renders as a menu item with the system checkmark column, aligned like a Picker's.
     private func menuButton(for lang: TranslationSettings.SourceLanguage) -> some View {
-        Toggle(lang.name, isOn: Binding(
+        Toggle(lang.displayName, isOn: Binding(
             get: { lang == selected },
             set: { _ in onSelect(lang) }
         ))

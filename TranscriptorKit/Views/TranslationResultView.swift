@@ -64,7 +64,7 @@ public struct TranslationResultView: View {
                 SourceLanguagePicker(
                     selected: session.selectedSourceLanguage,
                     // Nothing detected (e.g. the request failed): keep showing "Auto-detect" instead of "Unknown".
-                    fallbackLabel: session.sourceLanguage.map(TranslationSettings.languageName(fromModelString:)) ?? "Auto-detect",
+                    fallbackLabel: session.sourceLanguage.map(TranslationSettings.displayName(fromModelString:)) ?? "Auto-detect",
                     isDisabled: session.isTranslating
                 ) { lang in
                     session.selectSourceLanguage(lang, modelContext: modelContext)
@@ -83,7 +83,7 @@ public struct TranslationResultView: View {
                 }
                 ForEach(TranslationSettings.supportedLanguages, id: \.self) { targetLanguageItem($0, current: current) }
             } label: {
-                LanguageChip(title: current)
+                LanguageChip(title: TranslationSettings.displayName(forCode: current))
             }
             .tint(.primary)
         }
@@ -94,14 +94,14 @@ private extension TranslationResultView {
     /// Most-used target languages over the last 30 days, shown above the full list.
     var preferredTargetLanguages: [String] {
         LanguageFrequencyStore.shared.preferred
-            .map(\.name)
+            .map(\.code)
             .filter(TranslationSettings.supportedLanguages.contains)
     }
 
     /// A Toggle renders as a menu item with the system checkmark column; a Picker can't be used
     /// because preferred languages appear in the menu twice.
     func targetLanguageItem(_ language: String, current: String) -> some View {
-        Toggle(language, isOn: Binding(
+        Toggle(TranslationSettings.displayName(forCode: language), isOn: Binding(
             get: { language == current },
             set: { _ in session.selectTargetLanguage(language, modelContext: modelContext) }
         ))

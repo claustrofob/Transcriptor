@@ -37,12 +37,12 @@ struct HistoryView: View {
                                         .foregroundStyle(.secondary)
 
                                     HStack(spacing: 4) {
-                                        if let sourceLanguage = result.sourceLanguageName {
+                                        if let sourceLanguage = result.sourceLanguageDisplayName {
                                             Text(sourceLanguage)
                                             Image(systemName: "arrow.right")
                                                 .imageScale(.small)
                                         }
-                                        Text(result.targetLanguage)
+                                        Text(result.targetLanguageDisplayName)
                                     }
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -91,14 +91,14 @@ struct HistoryView: View {
         translatedText: "взволнованный",
         shortTranslation: "взволнованный, возбуждённый",
         sourceLanguage: "pl",
-        targetLanguage: "Russian",
+        targetLanguage: "ru",
         model: "gemini-3.8-flash"
     ))
     container.mainContext.insert(TranslationResult(
         sourceText: "Good morning",
         translatedText: "Доброе утро",
         sourceLanguage: nil,
-        targetLanguage: "Russian",
+        targetLanguage: "ru",
         model: "claude-opus-5-5"
     ))
     return HistoryView()

@@ -27,14 +27,12 @@ public enum OnDeviceTranslationService {
         }
     }
 
-    /// Whether `language` (English name, e.g. "Russian") is in the model's officially supported
-    /// languages; `nil` if the model isn't available or the language is unknown. Informational only:
-    /// the model can still produce text in other languages, so translation isn't blocked on this.
-    public static func supportsLanguage(_ language: String) -> Bool? {
+    /// Whether the language with ISO 639 `code` (e.g. "ru") is in the model's officially supported
+    /// languages; `nil` if the model isn't available. Informational only: the model can still
+    /// produce text in other languages, so translation isn't blocked on this.
+    public static func supportsLanguage(code: String) -> Bool? {
         let model = SystemLanguageModel.default
-        guard model.availability == .available,
-              let code = TranslationSettings.sourceLanguages.first(where: { $0.name == language })?.code
-        else { return nil }
+        guard model.availability == .available else { return nil }
         return model.supportsLocale(Locale(identifier: code))
     }
 

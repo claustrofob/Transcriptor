@@ -36,7 +36,7 @@ struct TranslationResultTests {
     }
 
     @Test func responseDurationIsStored() {
-        let result = TranslationResult(sourceText: "a", translatedText: "b", targetLanguage: "Russian", model: "m", responseDuration: 1.25)
+        let result = TranslationResult(sourceText: "a", translatedText: "b", targetLanguage: "ru", model: "m", responseDuration: 1.25)
         #expect(result.responseDuration == 1.25)
     }
 
@@ -115,7 +115,7 @@ struct TranslationResultTests {
         TranslationResult(
             sourceText: "podekscytowany",
             translatedText: "взволнованный",
-            targetLanguage: "Russian",
+            targetLanguage: "ru",
             model: "gemini-3.8-flash"
         )
     }

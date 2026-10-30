@@ -155,9 +155,7 @@ public final class TranslationSession {
 
             translatedText = output.translatedText
             sourceLanguage = output.sourceLanguage
-            if let code = TranslationSettings.sourceLanguages.first(where: { $0.name == targetLanguage })?.code {
-                LanguageFrequencyStore.shared.record(code: code)
-            }
+            LanguageFrequencyStore.shared.record(code: targetLanguage)
             if lang == nil {
                 selectedSourceLanguage = TranslationSettings.sourceLanguage(fromModelString: output.sourceLanguage)
                 // The detected language becomes part of the request: picking it again changes nothing.

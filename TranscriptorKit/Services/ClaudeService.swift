@@ -37,7 +37,7 @@ public actor ClaudeService {
             systemPrompt: PromptBuilder.translationPrompt(for: settings, sourceLanguageOverride: sourceLanguage),
             userText: text,
             effort: "medium",
-            schema: TranslationSchema.schema(lang: settings.targetLanguage).standardized(),
+            schema: TranslationSchema.schema(lang: settings.targetLanguageName).standardized(),
             fallbacks: model.supportsServerFallback ? "default" : nil
         )
         request.httpBody = try body.encodedBody()

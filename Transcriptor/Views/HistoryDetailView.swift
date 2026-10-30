@@ -11,9 +11,9 @@ struct HistoryDetailView: View {
 
                 // Read-only counterpart of the language bar on the Translate screen.
                 LanguagePair {
-                    Text(result.sourceLanguageName ?? "Unknown")
+                    Text(result.sourceLanguageDisplayName ?? "Unknown")
                 } target: {
-                    Text(result.targetLanguage)
+                    Text(result.targetLanguageDisplayName)
                 }
                 .font(.subheadline)
                 .lineLimit(1)
@@ -69,7 +69,7 @@ struct HistoryDetailView: View {
             normalForm: "podekscytowany",
             shortTranslation: "взволнованный, возбуждённый",
             sourceLanguage: "pl",
-            targetLanguage: "Russian",
+            targetLanguage: "ru",
             model: "claude-opus-5-5",
             translationType: .word,
             responseDuration: 2.37
