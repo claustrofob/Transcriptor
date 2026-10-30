@@ -13,20 +13,25 @@ struct TranslationView: View {
     var body: some View {
         NavigationStack {
             // A List, so history cards get the system swipe actions.
-            List {
-                TranslationInputBox(
-                    text: $sourceText,
-                    isFocused: $isTextFieldFocused,
-                    phase: session.phase,
-                    onTranslate: submit,
-                    onStop: session.stop,
-                    onEdit: session.edit
-                )
-                .cardRow()
+            ScrollViewReader { proxy in
+                List {
+                    TranslationInputBox(
+                        text: $sourceText,
+                        isFocused: $isTextFieldFocused,
+                        phase: session.phase,
+                        onTranslate: submit,
+                        onStop: session.stop,
+                        onEdit: session.edit
+                    )
+                    .cardRow()
+                    .id(Self.inputRowID)
 
-                TranslationResultView(session: session, onRepeat: repeatTranslation)
+                    TranslationResultView(session: session) { text in
+                        repeatTranslation(text, proxy: proxy)
+                    }
+                }
+                .listStyle(.plain)
             }
-            .listStyle(.plain)
             .scrollDismissesKeyboard(.interactively)
             .scrollBounceBehavior(.always)
             .dismissesKeyboardOnTap()
@@ -58,11 +63,21 @@ struct TranslationView: View {
     }
 
     /// Puts a history entry's text into the input and focuses it; the user sends it with Translate.
-    private func repeatTranslation(_ text: String) {
+    private func repeatTranslation(_ text: String, proxy: ScrollViewProxy) {
         session.beginEditing()
         sourceText = text
-        isTextFieldFocused = true
+        // Far down the list, the input's row is off screen and unloaded, so it can't take focus yet:
+        // scroll up first, then focus once the row is back.
+        withAnimation {
+            proxy.scrollTo(Self.inputRowID, anchor: .top)
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            isTextFieldFocused = true
+        }
     }
+
+    private static let inputRowID = "input"
 }
 
 #Preview {
