@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftData
+import SwiftUI
 
 /// State of a single on-screen translation, shared by TranslationView and ActionView.
 /// Starting a new request cancels the one in flight; a cancelled request is never saved to history.
@@ -44,6 +45,11 @@ public final class TranslationSession {
         case result
     }
 
+    /// Phase changes animate here, not with `.animation(value:)` in the views: the screen is a List,
+    /// which animates inserted and removed rows (the result flowing into its history card) only
+    /// inside an animated transaction.
+    private static let phaseAnimation = Animation.smooth(duration: 0.45)
+
     @ObservationIgnored private var task: Task<Void, Never>?
     /// Parameters of the latest request, in flight or finished; used to skip repeating it.
     @ObservationIgnored private var lastParameters: RequestParameters?
@@ -79,8 +85,10 @@ public final class TranslationSession {
         task?.cancel()
         task = nil
         lastParameters = nil
-        resetResult()
-        phase = .editing
+        withAnimation(Self.phaseAnimation) {
+            resetResult()
+            phase = .editing
+        }
     }
 
     /// Sends the failed request again with the same text and languages.
@@ -90,7 +98,9 @@ public final class TranslationSession {
 
     /// Hides the result and goes back to editing the input.
     public func edit() {
-        phase = .editing
+        withAnimation(Self.phaseAnimation) {
+            phase = .editing
+        }
     }
 
     /// Unlocks the input whatever the phase: stops the request in flight or hides the result.
@@ -137,9 +147,11 @@ public final class TranslationSession {
         lastParameters = parameters
 
         task?.cancel()
-        resetResult()
-        targetLanguage = settings.targetLanguage
-        phase = .translating
+        withAnimation(Self.phaseAnimation) {
+            resetResult()
+            targetLanguage = settings.targetLanguage
+            phase = .translating
+        }
 
         let override = selectedSourceLanguage
         task = Task { await run(text: sourceText, sourceLanguage: override, modelContext: modelContext) }
@@ -192,6 +204,8 @@ public final class TranslationSession {
             self.error = error.localizedDescription
         }
 
-        phase = .result
+        withAnimation(Self.phaseAnimation) {
+            phase = .result
+        }
     }
 }

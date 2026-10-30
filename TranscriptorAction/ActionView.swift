@@ -19,21 +19,21 @@ struct ActionView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    TranslationInputBox(
-                        text: $inputText,
-                        isFocused: $isTextFieldFocused,
-                        phase: session.phase,
-                        onTranslate: submit,
-                        onStop: session.stop,
-                        onEdit: session.edit
-                    )
+            // A List, so history cards get the system swipe actions.
+            List {
+                TranslationInputBox(
+                    text: $inputText,
+                    isFocused: $isTextFieldFocused,
+                    phase: session.phase,
+                    onTranslate: submit,
+                    onStop: session.stop,
+                    onEdit: session.edit
+                )
+                .cardRow()
 
-                    TranslationResultView(session: session, onRepeat: repeatTranslation)
-                }
-                .padding()
+                TranslationResultView(session: session, onRepeat: repeatTranslation)
             }
+            .listStyle(.plain)
             .scrollDismissesKeyboard(.interactively)
             .dismissesKeyboardOnTap()
             .navigationTitle("Transcriptor")

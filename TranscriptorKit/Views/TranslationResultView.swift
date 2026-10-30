@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Language bar → translation → history, driven by a `TranslationSession`.
-/// Placed under `TranslationInputBox` in TranslationView and ActionView.
+/// Language bar → translation → history, driven by a `TranslationSession`: rows of the List
+/// under `TranslationInputBox` in TranslationView and ActionView.
 /// The language bar is always shown, so the target language can be picked up front;
 /// the translation box only once the result is in. The result is saved to history right away,
 /// but its card stays hidden while the result is shown; when the result goes away (Edit, Stop,
@@ -23,10 +23,11 @@ public struct TranslationResultView: View {
 
     public var body: some View {
         languageBar
+            .cardRow()
 
-        // One container for the result and the history, so the animation below moves the box
-        // into its history card in the same transaction.
-        VStack(spacing: 16) {
+        // Rows, as the screen is a List. Phase changes are animated by `TranslationSession`, so the
+        // box's removal and its history card's insertion happen in one animated transaction.
+        Group {
             if session.phase == .result {
                 let resultID = session.resultID
                 TranslationBox(error: session.error, onRetry: { session.retry(modelContext: modelContext) }) {
@@ -46,12 +47,11 @@ public struct TranslationResultView: View {
                 .matchedGeometryEffect(id: resultID.map(AnyHashable.init) ?? AnyHashable("error"), in: namespace)
                 // A saved result leaves by flowing into its history card; an error just rolls up.
                 .transition(resultID != nil ? .asymmetric(insertion: AnyTransition(.reveal), removal: .opacity) : AnyTransition(.reveal))
+                .cardRow()
             }
 
             HistoryList(hiddenID: session.visibleResultID, namespace: namespace, onRepeat: onRepeat)
         }
-        .animation(.smooth(duration: 0.45), value: session.phase == .result)
-        .animation(.smooth(duration: 0.45), value: session.visibleResultID)
     }
 
     private var languageBar: some View {
@@ -280,5 +280,14 @@ public struct LanguageChip: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 7)
         .background(.fill.tertiary, in: .capsule)
+    }
+}
+
+extension View {
+    /// A List row that looks like a card on the screen background: no separator, no row background.
+    public func cardRow() -> some View {
+        listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
     }
 }
