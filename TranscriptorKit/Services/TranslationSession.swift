@@ -93,6 +93,15 @@ public final class TranslationSession {
         phase = .editing
     }
 
+    /// Unlocks the input whatever the phase: stops the request in flight or hides the result.
+    public func beginEditing() {
+        switch phase {
+        case .editing: break
+        case .translating: stop()
+        case .result: edit()
+        }
+    }
+
     /// Re-translates the current text, overriding source language detection.
     public func selectSourceLanguage(_ lang: TranslationSettings.SourceLanguage, modelContext: ModelContext) {
         selectedSourceLanguage = lang

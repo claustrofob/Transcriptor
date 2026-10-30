@@ -4,17 +4,19 @@ import SwiftData
 /// The last 50 translations as cards, newest first; shown under the result in TranslationView and ActionView.
 /// `hiddenID` is the result currently on screen: it's already saved, but stays out of the list until
 /// the result goes away. Cards carry `matchedGeometryEffect` in `namespace`, so the result box
-/// (with the same ID) flows into its card. A tap opens `HistoryDetailView`; swipe left (or long-press) to delete.
+/// (with the same ID) flows into its card. A tap opens `HistoryDetailView`; swipe left (or long-press)
+/// to delete; swipe right to repeat: `onRepeat` gets the entry's source text to edit and send again.
 struct HistoryList: View {
     let hiddenID: PersistentIdentifier?
     let namespace: Namespace.ID
+    let onRepeat: (String) -> Void
 
     @Query(sort: \TranslationResult.createdAt, order: .reverse)
     private var allTranslations: [TranslationResult]
 
     @Environment(\.modelContext) private var modelContext
-    /// Card whose Delete button is revealed; only one at a time.
-    @State private var swipedID: PersistentIdentifier?
+    /// Card whose swipe action is revealed, and on which side; only one card at a time.
+    @State private var swiped: (id: PersistentIdentifier, edge: HorizontalEdge)?
 
     private static let limit = 50
 
@@ -34,20 +36,27 @@ struct HistoryList: View {
 
             ForEach(translations) { result in
                 let id = result.persistentModelID
-                SwipeToDelete(isOpen: Binding(
-                    get: { swipedID == id },
-                    set: { swipedID = $0 ? id : nil }
+                SwipeActionsCard(openEdge: Binding(
+                    get: { swiped?.id == id ? swiped?.edge : nil },
+                    set: { swiped = $0.map { (id, $0) } }
                 )) {
+                    onRepeat(result.sourceText)
+                } onDelete: {
                     delete(result)
                 } content: {
                     NavigationLink {
-                        HistoryDetailView(result: result)
+                        HistoryDetailView(result: result) {
+                            onRepeat(result.sourceText)
+                        }
                     } label: {
                         HistoryRow(result: result)
                             .matchedGeometryEffect(id: AnyHashable(id), in: namespace)
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
+                        Button("Repeat", systemImage: "arrow.uturn.backward") {
+                            onRepeat(result.sourceText)
+                        }
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             delete(result)
                         }
@@ -77,11 +86,14 @@ struct HistoryList: View {
     }
 }
 
-/// Swipe left to reveal a Delete button behind the card, or swipe all the way to delete right away
-/// (like `swipeActions`, which only works in a `List`; here the cards share the screen's ScrollView).
-/// While the button is shown, a tap on the card closes it instead of opening the entry.
-private struct SwipeToDelete<Content: View>: View {
-    @Binding var isOpen: Bool
+/// Swipe actions on a card, like `swipeActions` (which only works in a `List`; here the cards share
+/// the screen's ScrollView): swipe right to reveal Repeat in front of the card, left to reveal Delete
+/// behind it; swiping all the way runs the action right away. While a button is shown, a tap on
+/// the card closes it instead of opening the entry.
+private struct SwipeActionsCard<Content: View>: View {
+    /// Side whose button is revealed; `nil` when the card is closed.
+    @Binding var openEdge: HorizontalEdge?
+    let onRepeat: () -> Void
     let onDelete: () -> Void
     @ViewBuilder let content: Content
 
@@ -92,52 +104,90 @@ private struct SwipeToDelete<Content: View>: View {
     private let buttonWidth: CGFloat = 76
     private let gap: CGFloat = 8
 
-    private var offset: CGFloat {
-        min(0, (isOpen ? -buttonWidth - gap : 0) + dragOffset)
+    private var restingOffset: CGFloat {
+        switch openEdge {
+        case .leading: buttonWidth + gap
+        case .trailing: -buttonWidth - gap
+        case nil: 0
+        }
     }
+
+    private var offset: CGFloat { restingOffset + dragOffset }
 
     var body: some View {
         content
             .overlay {
-                if isOpen {
+                if openEdge != nil {
                     Color.clear
                         .contentShape(.rect)
                         .onTapGesture { close() }
                 }
             }
             .offset(x: offset)
-            .background(alignment: .trailing) {
-                Button(role: .destructive, action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.title3)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(alignment: .leading) {
+                actionButton("Repeat", systemImage: "arrow.uturn.backward", tint: .blue, width: offset - gap) {
+                    run(onRepeat)
                 }
-                .buttonStyle(.plain)
-                .frame(width: max(0, -offset - gap))
-                .background(.red, in: .rect(cornerRadius: 20))
+                .opacity(offset > 0 ? 1 : 0)
+            }
+            .background(alignment: .trailing) {
+                actionButton("Delete", systemImage: "trash", tint: .red, width: -offset - gap) {
+                    run(onDelete)
+                }
                 .opacity(offset < 0 ? 1 : 0)
-                .accessibilityLabel("Delete")
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .gesture(HorizontalPanGesture(onChange: { dragOffset = $0 }, onEnd: endSwipe))
+            .accessibilityAction(named: "Repeat", onRepeat)
             .accessibilityAction(named: "Delete", onDelete)
     }
 
+    private func actionButton(
+        _ title: String,
+        systemImage: String,
+        tint: Color,
+        width: CGFloat,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .buttonStyle(.plain)
+        .frame(width: max(0, width))
+        .background(tint, in: .rect(cornerRadius: 20))
+        .accessibilityLabel(title)
+    }
+
     private func close() {
-        withAnimation(.smooth(duration: 0.3)) { isOpen = false }
+        withAnimation(.smooth(duration: 0.3)) { openEdge = nil }
+    }
+
+    private func run(_ action: () -> Void) {
+        withAnimation(.smooth(duration: 0.3)) {
+            openEdge = nil
+            action()
+        }
     }
 
     private func endSwipe(translation: CGFloat, velocity: CGFloat) {
-        let finalOffset = (isOpen ? -buttonWidth - gap : 0) + translation
+        let finalOffset = restingOffset + translation
         withAnimation(.smooth(duration: 0.3)) {
             dragOffset = 0
             if finalOffset < -width * 0.6 {
+                openEdge = nil
                 onDelete()
-            } else if velocity > 300 {
-                isOpen = false
+            } else if finalOffset > width * 0.6 {
+                openEdge = nil
+                onRepeat()
+            } else if finalOffset < -buttonWidth / 2 || (finalOffset < 0 && velocity < -300) {
+                openEdge = .trailing
+            } else if finalOffset > buttonWidth / 2 || (finalOffset > 0 && velocity > 300) {
+                openEdge = .leading
             } else {
-                isOpen = velocity < -300 || finalOffset < -buttonWidth / 2
+                openEdge = nil
             }
         }
     }
@@ -214,18 +264,25 @@ private struct HistoryRow: View {
 }
 
 /// Everything saved for a history entry, in the layout of the Translate screen.
+/// Repeat (next to the source text) goes back and calls `onRepeat`, like the Repeat swipe on a card.
 struct HistoryDetailView: View {
     let result: TranslationResult
+    let onRepeat: () -> Void
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     /// Deleted once the screen is gone: the view still reads the model while it's on screen.
     @State private var isDeleting = false
+    /// Repeated once the screen is gone, so the input on the Translate screen can take focus.
+    @State private var isRepeating = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                OriginalTextBox(result.sourceText)
+                OriginalTextBox(result.sourceText) {
+                    isRepeating = true
+                    dismiss()
+                }
 
                 // Read-only counterpart of the language bar on the Translate screen.
                 LanguagePair {
@@ -285,6 +342,9 @@ struct HistoryDetailView: View {
             }
         }
         .onDisappear {
+            if isRepeating {
+                onRepeat()
+            }
             guard isDeleting else { return }
             withAnimation(.smooth(duration: 0.3)) {
                 modelContext.delete(result)
@@ -317,7 +377,7 @@ struct HistoryDetailView: View {
     ))
     return NavigationStack {
         ScrollView {
-            HistoryList(hiddenID: nil, namespace: namespace)
+            HistoryList(hiddenID: nil, namespace: namespace) { _ in }
                 .padding()
         }
     }

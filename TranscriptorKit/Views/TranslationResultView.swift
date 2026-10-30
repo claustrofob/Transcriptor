@@ -9,12 +9,16 @@ import SwiftData
 /// a new request), the box flows into that card.
 public struct TranslationResultView: View {
     private let session: TranslationSession
+    private let onRepeat: (String) -> Void
 
     @Environment(\.modelContext) private var modelContext
     @Namespace private var namespace
 
-    public init(session: TranslationSession) {
+    /// `onRepeat` gets the source text of a history entry swiped to repeat: put it into the input
+    /// and focus it (`TranslationSession.beginEditing()` unlocks the input); the user sends it.
+    public init(session: TranslationSession, onRepeat: @escaping (String) -> Void) {
         self.session = session
+        self.onRepeat = onRepeat
     }
 
     public var body: some View {
@@ -44,7 +48,7 @@ public struct TranslationResultView: View {
                 .transition(resultID != nil ? .asymmetric(insertion: AnyTransition(.reveal), removal: .opacity) : AnyTransition(.reveal))
             }
 
-            HistoryList(hiddenID: session.visibleResultID, namespace: namespace)
+            HistoryList(hiddenID: session.visibleResultID, namespace: namespace, onRepeat: onRepeat)
         }
         .animation(.smooth(duration: 0.45), value: session.phase == .result)
         .animation(.smooth(duration: 0.45), value: session.visibleResultID)
@@ -136,18 +140,31 @@ extension Transition where Self == RevealTransition {
 }
 
 /// Group box with the source text.
+/// Pass `onRepeat` to show a Repeat button at the top right (like Copy in the result).
 public struct OriginalTextBox: View {
     private let text: String
+    private let onRepeat: (() -> Void)?
 
-    public init(_ text: String) {
+    public init(_ text: String, onRepeat: (() -> Void)? = nil) {
         self.text = text
+        self.onRepeat = onRepeat
     }
 
     public var body: some View {
         GroupBox {
-            Text(text)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(alignment: .top, spacing: 12) {
+                Text(text)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if let onRepeat {
+                    Button("Repeat", systemImage: "arrow.uturn.backward", action: onRepeat)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        // Neutral like the Copy button in the result.
+                        .tint(.secondary)
+                }
+            }
         }
         .groupBoxStyle(.roundedCard)
     }

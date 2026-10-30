@@ -52,7 +52,7 @@ iOS-приложение для перевода текста через Google 
 
 **History** (отдельного экрана нет — список на экране Translate и в ActionView, `HistoryList` в TranscriptorKit):
 - Карточки последних 50 переводов под результатом (или сразу под строкой языков, если результата нет). Более старые удаляются из базы
-- В карточке: оригинальное слово, точный перевод (без форматирования), языки. Тап — `HistoryDetailView` (вся информация, кнопка Delete в nav bar: удаляет после закрытия экрана). Удаление — свайп влево (кнопка за карточкой; полный свайп удаляет сразу) или долгое нажатие. Свайп свой (`SwipeToDelete` + `UIPanGestureRecognizer`, начинается только при горизонтальном движении): `swipeActions` работает только в `List`, а `List` ломает перетекание результата
+- В карточке: оригинальное слово, точный перевод (без форматирования), языки. Тап — `HistoryDetailView` (вся информация; кнопка Delete в nav bar — удаляет после закрытия экрана; кнопка Repeat справа от оригинального текста в `OriginalTextBox` — возвращает на главный экран и делает то же, что свайп Repeat). Удаление — свайп влево (кнопка за карточкой; полный свайп удаляет сразу) или долгое нажатие. Свайп вправо — Repeat (тап по кнопке или полный свайп; тоже в контекстном меню): текст записи подставляется в поле, оно получает фокус (`TranslationSession.beginEditing()` останавливает запрос / скрывает результат), перевод запускает пользователь — через `TranslationResultView(session:onRepeat:)`. Свайп свой (`SwipeActionsCard` + `UIPanGestureRecognizer`, начинается только при горизонтальном движении): `swipeActions` работает только в `List`, а `List` ломает перетекание результата
 - Результат сразу пишется в историю, но пока он показан, его карточка скрыта (`TranslationSession.visibleResultID`). Когда результат уходит (Edit, Stop, новый запрос, смена языка), блок результата перетекает в свою карточку: `matchedGeometryEffect` по `persistentModelID` в общем namespace `TranslationResultView`
 
 **Settings:**
@@ -104,7 +104,7 @@ iOS-приложение для перевода текста через Google 
 
 `TranslationInputBox(text:isFocused:phase:onTranslate:onStop:onEdit:)` (TranscriptorKit) — блок ввода: поле, очистка, кнопка Translate / Stop / Edit на всю ширину. Используется в TranslationView и ActionView над `TranslationResultView`.
 
-`TranslationResultView(session:)` (TranscriptorKit) — строка языков (Source ⇅ → Target ⇅; «Auto-detect» до первого запроса, «Detecting» пока язык не определён) → Translation (только в `.result`) → `HistoryList`. Используется в TranslationView и ActionView.
+`TranslationResultView(session:onRepeat:)` (TranscriptorKit) — строка языков (Source ⇅ → Target ⇅; «Auto-detect» до первого запроса, «Detecting» пока язык не определён) → Translation (только в `.result`) → `HistoryList`. Используется в TranslationView и ActionView.
 
 `dismissesKeyboardOnTap()` (TranscriptorKit) — закрытие клавиатуры тапом вне текстового поля (распознаватель на окне, активен только при открытой клавиатуре).
 

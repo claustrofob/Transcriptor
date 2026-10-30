@@ -33,7 +33,7 @@ struct ActionView: View {
                         onEdit: session.edit
                     )
 
-                    TranslationResultView(session: session)
+                    TranslationResultView(session: session, onRepeat: repeatTranslation)
                 }
                 .padding()
             }
@@ -61,6 +61,13 @@ struct ActionView: View {
 
         isTextFieldFocused = false
         session.translate(text, modelContext: modelContext)
+    }
+
+    /// Puts a history entry's text into the input and focuses it; the user sends it with Translate.
+    private func repeatTranslation(_ text: String) {
+        session.beginEditing()
+        inputText = text
+        isTextFieldFocused = true
     }
 }
 
