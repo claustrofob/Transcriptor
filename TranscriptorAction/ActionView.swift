@@ -3,19 +3,16 @@ import SwiftData
 import TranscriptorKit
 
 struct ActionView: View {
-    let sourceText: String
     let onDone: () -> Void
 
     @State private var session = TranslationSession()
     @State private var inputText: String
-    /// `.task` runs again whenever the screen reappears, e.g. back from a history entry.
-    @State private var hasTranslatedSharedText = false
     @FocusState private var isTextFieldFocused: Bool
 
     @Environment(\.modelContext) private var modelContext
 
+    /// The shared text only fills the input; the user starts the translation with Translate.
     init(sourceText: String, onDone: @escaping () -> Void) {
-        self.sourceText = sourceText
         self.onDone = onDone
         self._inputText = State(initialValue: sourceText)
     }
@@ -45,11 +42,6 @@ struct ActionView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { onDone() }
                 }
-            }
-            .task {
-                guard !hasTranslatedSharedText else { return }
-                hasTranslatedSharedText = true
-                session.translate(sourceText, modelContext: modelContext)
             }
         }
     }

@@ -11,7 +11,7 @@ An iOS translation app powered by Google Gemini, Anthropic Claude, or Apple's on
 - **On-device fallback** — if the cloud provider has no API key or the network is down, the on-device model translates instead, and the result says so.
 - **Language bar** — source → target under the input. The source language is auto-detected (and can be corrected, which re-translates); the target language is picked right there, with your most-used languages on top.
 - **Translate / Stop / Edit** — the input locks while translating and during review; Stop cancels the request, Edit brings the keyboard back. Errors come with a Retry button. Cancelled or empty responses never reach history.
-- **Action Extension** — select text in any app (Safari, Notes, …), tap Share → Translate, and get the same screen in a sheet, with the shared text ready to edit and re-translate.
+- **Action Extension** — select text in any app (Safari, Notes, …), tap Share → Translate, and get the same screen in a sheet, with the shared text in the input, ready to edit and translate.
 - **Copy everything** — one tap copies the whole result, examples included.
 - **History** — the last 50 translations right under the result, on the Translate screen and in the Share extension. When a result is dismissed, it flows into its history card. Tap a card for the full entry: source → target languages, the model used, the recognized text type, and response time.
 - **Polish** — a rainbow glow around the input while translating, animated result reveal, springy button transitions, SF Symbols effects.
