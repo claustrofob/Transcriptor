@@ -3,13 +3,11 @@ import SwiftData
 
 /// The last 50 translations as card rows of the screen's List, newest first, under the result in
 /// TranslationView and ActionView. `hiddenID` is the result currently on screen: it's already saved,
-/// but stays out of the list until the result goes away. Cards carry `matchedGeometryEffect` in
-/// `namespace`, so the result box (with the same ID) flows into its card. A tap opens
+/// but stays out of the list until the result goes away. A tap opens
 /// `HistoryDetailView`; swipe left (or long-press) to delete; swipe right to repeat: `onRepeat` gets
 /// the entry's source text to edit and send again.
 struct HistoryList: View {
     let hiddenID: PersistentIdentifier?
-    let namespace: Namespace.ID
     let onRepeat: (String) -> Void
 
     @Query(sort: \TranslationResult.createdAt, order: .reverse)
@@ -38,7 +36,6 @@ struct HistoryList: View {
 
         ForEach(translations) { result in
             HistoryRow(result: result)
-                .matchedGeometryEffect(id: AnyHashable(result.persistentModelID), in: namespace)
                 .background {
                     // Hidden link: a visible one adds a disclosure chevron outside the card.
                     NavigationLink("") {
@@ -209,7 +206,6 @@ struct HistoryDetailView: View {
 }
 
 #Preview {
-    @Previewable @Namespace var namespace
     let container = try! ModelContainer(
         for: TranslationResult.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
@@ -231,7 +227,7 @@ struct HistoryDetailView: View {
     ))
     return NavigationStack {
         List {
-            HistoryList(hiddenID: nil, namespace: namespace) { _ in }
+            HistoryList(hiddenID: nil) { _ in }
         }
         .listStyle(.plain)
     }

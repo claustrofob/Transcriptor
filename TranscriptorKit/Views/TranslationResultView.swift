@@ -6,13 +6,12 @@ import SwiftData
 /// The language bar is always shown, so the target language can be picked up front;
 /// the translation box only once the result is in. The result is saved to history right away,
 /// but its card stays hidden while the result is shown; when the result goes away (Edit, Stop,
-/// a new request), the box flows into that card.
+/// a new request), the box rolls up and the card appears in the history.
 public struct TranslationResultView: View {
     private let session: TranslationSession
     private let onRepeat: (String) -> Void
 
     @Environment(\.modelContext) private var modelContext
-    @Namespace private var namespace
 
     /// `onRepeat` gets the source text of a history entry swiped to repeat: put it into the input
     /// and focus it (`TranslationSession.beginEditing()` unlocks the input); the user sends it.
@@ -29,7 +28,6 @@ public struct TranslationResultView: View {
         // box's removal and its history card's insertion happen in one animated transaction.
         Group {
             if session.phase == .result {
-                let resultID = session.resultID
                 TranslationBox(error: session.error, onRetry: { session.retry(modelContext: modelContext) }) {
                     if let fallbackNotice = session.fallbackNotice {
                         Label(fallbackNotice, systemImage: "iphone")
@@ -43,14 +41,13 @@ public struct TranslationResultView: View {
                         examples: session.examples
                     )
                 }
-                // An error has no history card: its ID matches nothing.
-                .matchedGeometryEffect(id: resultID.map(AnyHashable.init) ?? AnyHashable("error"), in: namespace)
-                // A saved result leaves by flowing into its history card; an error just rolls up.
-                .transition(resultID != nil ? .asymmetric(insertion: AnyTransition(.reveal), removal: .opacity) : AnyTransition(.reveal))
+                // Always at its full height, never squeezed by the height List proposes while inserting the row.
+                .fixedSize(horizontal: false, vertical: true)
+                .transition(.reveal)
                 .cardRow()
             }
 
-            HistoryList(hiddenID: session.visibleResultID, namespace: namespace, onRepeat: onRepeat)
+            HistoryList(hiddenID: session.visibleResultID, onRepeat: onRepeat)
         }
     }
 
